@@ -26,4 +26,4 @@ How will people input their data?
 Options to change current savings/input
 Creating a new token/card for expenditures
 Modals for how recurring expenditures happen
-
+Creative functions for interpreting data
