@@ -19,3 +19,6 @@ Everyone is now on the same page as to what needs to be pushed to GitHub. We wil
 
 ##### Brainstom format:
 - Nav Bar - the nav bar shouldn't be cluttered, should only show pages that one can access and adaptive to if you are logged in or not
+
+People make a budget app every semester.
+Think about user applications and interface, the most important aspect in bringing people back to use the app again.
