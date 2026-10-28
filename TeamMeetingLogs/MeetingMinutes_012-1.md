@@ -22,3 +22,8 @@ Everyone is now on the same page as to what needs to be pushed to GitHub. We wil
 
 People make a budget app every semester.
 Think about user applications and interface, the most important aspect in bringing people back to use the app again.
+How will people input their data?
+Options to change current savings/input
+Creating a new token/card for expenditures
+Modals for how recurring expenditures happen
+
