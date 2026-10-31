@@ -82,6 +82,17 @@ const auth = (req, res, next) => {
   next();
 };
 
+// A function that checks if the user has a session and if they do, redirect them to default page
+// This is useful for pages that expect you to be logged out to use like register or login
+const no_auth = (req, res, next) => 
+{
+  if(req.session.user)
+  {
+    return res.redirect('/')
+  }
+  next();
+};
+
 app.get('/', (req, res) =>
 {
     res.render('pages/home.hbs')
