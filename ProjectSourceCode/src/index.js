@@ -98,6 +98,11 @@ app.get('/', (req, res) =>
     res.render('pages/home.hbs')
 });
 
+app.get('/register', no_auth, (req, res) =>
+{
+  res.render('pages/register.hbs');
+});
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
