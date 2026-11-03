@@ -70,6 +70,9 @@ app.use(
   })
 );
 
+// Include our javascript and stylesheet and images
+app.use(express.static(__dirname + '/resources'));
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
