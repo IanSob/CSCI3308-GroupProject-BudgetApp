@@ -6,9 +6,17 @@ CREATE TABLE IF NOT EXISTS users
     password VARCHAR(60) NOT NULL
 );
 
+-- Email verification fields
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
 
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS verification_token TEXT;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP;
+
+-- User savings table
 CREATE TABLE IF NOT EXISTS userSavings
 (
     username VARCHAR(50) PRIMARY KEY NOT NULL,
