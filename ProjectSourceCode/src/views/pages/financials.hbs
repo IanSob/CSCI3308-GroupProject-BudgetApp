@@ -8,17 +8,39 @@
 </div>
 
 <div class="row">
-  {{#each incomes}}
-    <div class="col-12 col-sm-6 col-md-4 mb-3">
-      <div class="card h-100">
-        <div class="card-body">
-          <h5 class="card-title">{{incomename}}</h5>
-          <p class="card-text mb-1"><strong>Type:</strong> {{incometype}}</p>
-          <p class="card-text"><strong>Amount:</strong> ${{amount}}</p>
-        </div>
+
+  {{! ===== RIGHT HALF: Expenses  ===== }}
+  <div class="col-12 col-md-6">
+    <section class="my-4">
+      <h2 class="h4 border-bottom pb-2 mb-3">Expenses</h2>
+
+      {{! TODO: add expense cards here }}
+    </section>
+  </div>
+
+  {{! ===== LEFT HALF: Income ===== }}
+  <div class="col-12 col-md-6">
+    <section class="my-4">
+      <h2 class="h4 border-bottom pb-2 mb-3">Income</h2>
+
+      <div class="row g-2">
+        {{#each incomes}}
+          <div class="col-6 col-xl-4">
+            <div class="card h-100">
+              <div class="card-body p-2">
+                <h6 class="card-title mb-1">{{incomename}}</h6>
+                <p class="card-text small text-muted mb-0">{{incometype}}</p>
+                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
+              </div>
+            </div>
+          </div>
+        {{else}}
+          <p class="text-muted small">No income sources yet.</p>
+        {{/each}}
       </div>
-    </div>
-  {{else}}
-    <p class="text-muted">No income sources yet.</p>
-  {{/each}}
+    </section>
+  </div>
+
+  
+
 </div>

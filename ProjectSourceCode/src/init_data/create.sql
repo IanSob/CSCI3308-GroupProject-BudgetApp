@@ -26,8 +26,9 @@ CREATE TABLE IF NOT EXISTS userSavings
 -- User income table
 CREATE TABLE IF NOT EXISTS userIncome
 (
-    username VARCHAR(50) PRIMARY KEY NOT NULL,
-    incomeName VARCHAR(50),
-    incomeType VARCHAR(50),
-    amount DECIMAL   
+    incomeID SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+    incomeName VARCHAR(50) NOT NULL,
+    incomeType VARCHAR(50) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL DEFAULT 0
 );
