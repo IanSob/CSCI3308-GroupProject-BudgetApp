@@ -87,6 +87,10 @@ app.get('/', (req, res) =>
     res.render('pages/home.hbs')
 });
 
+app.get('/expenses', auth, (req, res) => {
+    res.render('pages/expenses.hbs');
+});
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
