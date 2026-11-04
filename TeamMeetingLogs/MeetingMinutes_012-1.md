@@ -20,13 +20,6 @@ Everyone is now on the same page as to what needs to be pushed to GitHub. We wil
 ##### Brainstom format:
 - Nav Bar - the nav bar shouldn't be cluttered, should only show pages that one can access and adaptive to if you are logged in or not
 10/28 TA Meeting:
-
-11/3 Group Meeting Notes:
-- fixed the part with the app so we can include style sheet and javascript.
-- Made a simple register page, the validation part isn't done yet.
-- Login page in process.
-- Need to update the release notes.
-- Need to merge the code we've been working on.
   
 People make a budget app every semester.
 Think about user applications and interface because the most important aspect in bringing people back to use the app again.
@@ -35,3 +28,12 @@ Options to change current savings/input
 Creating a new token/card for expenditures
 Modals for how recurring expenditures happen
 Creative functions for interpreting data
+
+
+11/3 Group Meeting Notes:
+- fixed the part with the app so we can include style sheet and javascript.
+- Made a simple register page, the validation part isn't done yet.
+- Login page in process.
+- Need to update the release notes.
+- Need to merge the code we've been working on.
+  
