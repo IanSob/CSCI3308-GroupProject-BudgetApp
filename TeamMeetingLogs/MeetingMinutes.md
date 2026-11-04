@@ -37,3 +37,9 @@ Creative functions for interpreting data
 - Need to update the release notes.
 - Need to merge the code we've been working on.
   
+11/4 TA Meeting notes:
+- 3 commits a day
+- Make sure to do pull requests
+    - Keeps the code consistent and correct
+- Continue to work on expenses especially
+- Assign different user stories to everyone
