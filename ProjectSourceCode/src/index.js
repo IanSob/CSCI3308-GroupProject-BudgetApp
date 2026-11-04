@@ -191,83 +191,131 @@ app.get('/register', no_auth, (req, res) => {
 });
 
 // Registration submission
-app.post('/register', no_auth, async (req, res) => {
+// app.post('/register', no_auth, async (req, res) => {
+//   const pass = req.body.password;
+//   const passConfirm = req.body.passwordConfirm;
+//   const usr = req.body.username;
+//   const usrName = req.body.name;
+//   const email = req.body.email;
+
+//   if (!pass || !passConfirm || !usr || !usrName || !email) {
+//     return res.status(400).send('Please complete all registration fields.');
+//   }
+
+//   if (pass !== passConfirm) {
+//     return res.status(400).send('Passwords do not match.');
+//   }
+
+//   try {
+//     // Hash the user's password
+//     const hash = await bcrypt.hash(pass, 10);
+
+//     // Generate a secure verification token
+//     const verificationToken = crypto.randomBytes(32).toString('hex');
+
+//     // Hash the token before saving it in the database
+//     const tokenHash = crypto
+//       .createHash('sha256')
+//       .update(verificationToken)
+//       .digest('hex');
+
+//     // Set token expiration to 24 hours
+//     const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+//     // Insert the new user into the database
+//     await db.none(
+//       `INSERT INTO users
+//        (username, email, name, password, email_verified,
+//         verification_token, verification_token_expires)
+//        VALUES ($1, $2, $3, $4, FALSE, $5, $6)`,
+//       [usr, email, usrName, hash, tokenHash, tokenExpiration]
+//     );
+
+//     // Create the verification link
+//     const verificationLink =
+//       `${process.env.APP_URL}/verify-email?token=${verificationToken}`;
+
+//     // Send the verification email
+//     await transporter.sendMail({
+//       from: process.env.EMAIL_FROM,
+//       to: email,
+//       subject: 'Verify Your BudgetApp Email',
+//       text: `Hello ${usrName},
+
+// Thank you for registering for BudgetApp!
+
+// Please click the link below to verify your email address:
+
+// ${verificationLink}
+
+// This link expires in 24 hours.`,
+//       html: `
+//         <h2>Welcome to BudgetApp!</h2>
+//         <p>Hello ${usrName},</p>
+//         <p>Please click the link below to verify your email address.</p>
+//         <a href="${verificationLink}">Verify My Email</a>
+//         <p>This link expires in 24 hours.</p>
+//       `,
+//     });
+
+//     // Tell the user to check their email
+//     res.status(201).send(
+//       'Account created! Please check your email to verify your account.'
+//     );
+
+//   } catch (err) {
+//     console.log('Registration error:', err.message || err);
+//     res.status(400).send(
+//       'Registration failed. Please check your information and try again.'
+//     );
+//   }
+// });
+
+app.post('/register', no_auth, async (req, res) =>
+{
   const pass = req.body.password;
-  const passConfirm = req.body.confirmPassword;
+  const passConfirm = req.body.passwordConfirm;
   const usr = req.body.username;
   const usrName = req.body.name;
   const email = req.body.email;
 
-  if (!pass || !passConfirm || !usr || !usrName || !email) {
-    return res.status(400).send('Please complete all registration fields.');
+  // We have all the required data
+  if(pass && passConfirm && usr && usrName && email)
+  {
+    // Passwords do not match
+    if(pass != passConfirm)
+    {
+      req.status(400).send("Passwords do not match!");
+    }
+    // Passwords match
+    else
+    {
+      // The hashed password
+      const hash = await bcrypt.hash(pass, 10);
+
+      try
+      {
+        const query = `INSERT INTO users (username, email, name, password)
+        VALUES ('${usr}', '${email}', '${usrName}', '${hash}');`;
+
+        await db.none(query);
+
+        // Save the session after creating the account
+        req.session.user = usr;
+        req.session.save();
+
+        // Redirect to the home page after account created
+        res.status(201).redirect('/');
+      }
+      catch (err)
+      {
+        res.status(400).send("Problem creating user.");
+      }
+    }
   }
-
-  if (pass !== passConfirm) {
-    return res.status(400).send('Passwords do not match.');
-  }
-
-  try {
-    // Hash the user's password
-    const hash = await bcrypt.hash(pass, 10);
-
-    // Generate a secure verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-
-    // Hash the token before saving it in the database
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(verificationToken)
-      .digest('hex');
-
-    // Set token expiration to 24 hours
-    const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    // Insert the new user into the database
-    await db.none(
-      `INSERT INTO users
-       (username, email, name, password, email_verified,
-        verification_token, verification_token_expires)
-       VALUES ($1, $2, $3, $4, FALSE, $5, $6)`,
-      [usr, email, usrName, hash, tokenHash, tokenExpiration]
-    );
-
-    // Create the verification link
-    const verificationLink =
-      `${process.env.APP_URL}/verify-email?token=${verificationToken}`;
-
-    // Send the verification email
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: email,
-      subject: 'Verify Your BudgetApp Email',
-      text: `Hello ${usrName},
-
-Thank you for registering for BudgetApp!
-
-Please click the link below to verify your email address:
-
-${verificationLink}
-
-This link expires in 24 hours.`,
-      html: `
-        <h2>Welcome to BudgetApp!</h2>
-        <p>Hello ${usrName},</p>
-        <p>Please click the link below to verify your email address.</p>
-        <a href="${verificationLink}">Verify My Email</a>
-        <p>This link expires in 24 hours.</p>
-      `,
-    });
-
-    // Tell the user to check their email
-    res.status(201).send(
-      'Account created! Please check your email to verify your account.'
-    );
-
-  } catch (err) {
-    console.log('Registration error:', err.message || err);
-    res.status(400).send(
-      'Registration failed. Please check your information and try again.'
-    );
+  else
+  {
+    res.status(400).send("Missing registration information!");
   }
 });
 

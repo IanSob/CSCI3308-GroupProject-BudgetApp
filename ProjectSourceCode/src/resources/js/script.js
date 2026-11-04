@@ -3,7 +3,7 @@ function passwordMatch()
 {
     // Our passwords
     pass = document.getElementById('password').value
-    passConfirm = document.getElementById('password_confirm')
+    passConfirm = document.getElementById('passwordConfirm')
 
     // Make sure they match
     if(pass == passConfirm.value)
