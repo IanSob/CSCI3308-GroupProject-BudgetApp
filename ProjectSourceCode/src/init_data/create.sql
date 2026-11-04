@@ -5,3 +5,9 @@ CREATE TABLE IF NOT EXISTS users
     name VARCHAR(50) NOT NULL,
     password VARCHAR(60) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS userSavings
+(
+    username VARCHAR(50) PRIMARY KEY NOT NULL,
+    savings DECIMAL
+);
