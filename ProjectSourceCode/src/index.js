@@ -113,20 +113,26 @@ app.get('/forgot-password', (req, res) => {
 // Financials
 app.get('/financials', async (req, res) => {
   try {
-    const username = 'bobLovesdogs4';
+    // TEMP: hardcoded test user until login is merged
+    const username = 'testuser';
 
-    const row = await db.one(
-      'SELECT savings FROM usersavings WHERE username = $1',
+    const savingsRow = await db.one(
+      'SELECT savings FROM users WHERE username = $1',
       [username]
     );
 
-    res.render('pages/financials', { savings: row.savings });
+    const incomes = await db.any(
+      'SELECT incomeName, incomeType, amount FROM userIncome WHERE username = $1',
+      [username]
+    );
+
+    res.render('pages/financials', { savings: savingsRow.savings, incomes });
   } catch (err) {
     console.log('ERROR:', err.message || err);
-
     res.render('pages/financials', {
       savings: null,
-      message: 'Could not load savings.',
+      incomes: [],
+      message: 'Could not load financial data.',
       error: true,
     });
   }

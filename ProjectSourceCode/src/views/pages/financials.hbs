@@ -6,3 +6,19 @@
     <p class="card-text">${{savings}}</p>
   </div>
 </div>
+
+<div class="row">
+  {{#each incomes}}
+    <div class="col-12 col-sm-6 col-md-4 mb-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{incomename}}</h5>
+          <p class="card-text mb-1"><strong>Type:</strong> {{incometype}}</p>
+          <p class="card-text"><strong>Amount:</strong> ${{amount}}</p>
+        </div>
+      </div>
+    </div>
+  {{else}}
+    <p class="text-muted">No income sources yet.</p>
+  {{/each}}
+</div>

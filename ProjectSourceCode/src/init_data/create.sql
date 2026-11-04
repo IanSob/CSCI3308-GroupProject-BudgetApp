@@ -22,3 +22,12 @@ CREATE TABLE IF NOT EXISTS userSavings
     username VARCHAR(50) PRIMARY KEY NOT NULL,
     savings DECIMAL
 );
+
+-- User income table
+CREATE TABLE IF NOT EXISTS userIncome
+(
+    username VARCHAR(50) PRIMARY KEY NOT NULL,
+    incomeName VARCHAR(50),
+    incomeType VARCHAR(50),
+    amount DECIMAL   
+);
