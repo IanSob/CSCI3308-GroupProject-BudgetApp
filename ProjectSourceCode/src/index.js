@@ -100,6 +100,10 @@ app.get('/', (req, res) =>
 {
     res.render('pages/home.hbs')
 });
+// Forgot Password Route, Saanvi
+app.get('/forgot-password', (req, res) => {
+  res.render('pages/forgot-password.hbs');
+});
 
 app.get('/financials', async (req, res) => {
   try {
