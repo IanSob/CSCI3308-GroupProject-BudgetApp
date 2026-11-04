@@ -70,6 +70,9 @@ app.use(
   })
 );
 
+// Include our javascript and stylesheet and images
+app.use(express.static(__dirname + '/resources'));
+
 // *****************************************************
 // <!-- Section 4 : API Routes -->
 // *****************************************************
@@ -82,9 +85,69 @@ const auth = (req, res, next) => {
   next();
 };
 
+// A function that checks if the user has a session and if they do, redirect them to default page
+// This is useful for pages that expect you to be logged out to use like register or login
+const no_auth = (req, res, next) => 
+{
+  if(req.session.user)
+  {
+    return res.redirect('/')
+  }
+  next();
+};
+
 app.get('/', (req, res) =>
 {
     res.render('pages/home.hbs')
+});
+
+app.get('/register', no_auth, (req, res) =>
+{
+  res.render('pages/register.hbs');
+});
+
+app.post('/register', no_auth, async (req, res) =>
+{
+  const pass = req.body.password;
+  const passConfirm = req.body.password;
+  const usr = req.body.username;
+  const usrName = req.body.name;
+  const email = req.body.email;
+
+  // We have all the required data
+  if(pass && passConfirm && usr && usrName && email)
+  {
+    // Passwords do not match
+    if(pass != passConfirm)
+    {
+      req.status(400).redirect('/register');
+    }
+    // Passwords match
+    else
+    {
+      // The hashed password
+      const hash = await bcrypt.hash(pass, 10);
+
+      try
+      {
+        const query = `INSERT INTO users (username, email, name, password)
+        VALUES ('${usr}', '${email}', '${usrName}', '${hash}');`;
+
+        await db.none(query);
+
+        // Save the session after creating the account
+        req.session.user = usr;
+        req.session.save();
+
+        // Redirect to the home page after account created
+        res.status(201).redirect('/');
+      }
+      catch (err)
+      {
+        res.status(400).redirect('/register');
+      }
+    }
+  }
 });
 
 // *****************************************************
