@@ -5,14 +5,39 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Total Expenses</h5>
-            <h3 id="total-expenses">$0.00</h3>
+            <h3 id="total-expenses">${{totalExpenses}}</h3>
         </div>
     </div>
 
+    <!-- Error Message -->
+    {{#if errorMessage}}
+        <div class="alert alert-danger">
+            {{errorMessage}}
+        </div>
+    {{/if}}
+
     <!-- Individual Expense Cards -->
     <div id="expenses-container" class="row">
-        <div class="col-12 text-center">
-            <p>You don't have any expenses recorded yet.</p>
-        </div>
+        {{#if hasExpenses}}
+            {{#each expenses}}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{expense_name}}</h5>
+                            <h4 class="card-text">${{amount}}</h4>
+                            <p class="card-text">
+                                Category: {{category}}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {{/each}}
+        {{else}}
+            {{#unless errorMessage}}
+                <div class="col-12 text-center">
+                    <p>You don't have any expenses recorded yet.</p>
+                </div>
+            {{/unless}}
+        {{/if}}
     </div>
 </div>

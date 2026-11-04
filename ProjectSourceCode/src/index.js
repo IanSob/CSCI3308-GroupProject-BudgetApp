@@ -101,8 +101,36 @@ app.get('/', (req, res) =>
     res.render('pages/home.hbs')
 });
 
-app.get('/expenses', auth, (req, res) => {
-  res.render('pages/expenses.hbs');
+app.get('/expenses', auth, async (req, res) => {
+  try {
+    const expenses = await db.any(
+      `SELECT expense_id, expense_name, amount, category
+       FROM expenses
+       WHERE username = $1
+       ORDER BY expense_id DESC`,
+      [req.session.user]
+    );
+
+    const totalExpenses = expenses.reduce(
+      (total, expense) => total + Number(expense.amount),
+      0
+    );
+
+    res.render('pages/expenses.hbs', {
+      expenses: expenses,
+      hasExpenses: expenses.length > 0,
+      totalExpenses: totalExpenses.toFixed(2),
+    });
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+
+    res.status(500).render('pages/expenses.hbs', {
+      expenses: [],
+      hasExpenses: false,
+      totalExpenses: '0.00',
+      errorMessage: 'Unable to load expenses right now.',
+    });
+  }
 });
 
 app.get('/financials', async (req, res) => {
