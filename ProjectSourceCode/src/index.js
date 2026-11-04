@@ -1,61 +1,60 @@
+
 // *****************************************************
-// <!-- Section 1 : Import Dependencies -->
+// Section 1 : Import Dependencies
 // *****************************************************
 
-const express = require('express'); // To build an application server or API
+const express = require('express');
 const app = express();
-const handlebars = require('express-handlebars'); //to enable express to work with handlebars
-const Handlebars = require('handlebars'); // to include the templating engine responsible for compiling templates
+const handlebars = require('express-handlebars');
+const Handlebars = require('handlebars');
 const path = require('path');
-const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
+const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
-const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
-const bcrypt = require('bcryptjs'); //  To hash passwords
-const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const axios = require('axios');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 // *****************************************************
-// <!-- Section 2 : Connect to DB -->
+// Section 2 : Connect to DB
 // *****************************************************
 
-// create `ExpressHandlebars` instance and configure the layouts and partials dir.
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
 });
 
-// database configuration
 const dbConfig = {
-  host: 'db', // the database server
-  port: 5432, // the database port
-  database: process.env.POSTGRES_DB, // the database name
-  user: process.env.POSTGRES_USER, // the user account to connect with
-  password: process.env.POSTGRES_PASSWORD, // the password of the user account
+  host: 'db',
+  port: 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
 };
 
 const db = pgp(dbConfig);
 
-// test your database
 db.connect()
   .then(obj => {
-    console.log('Database connection successful'); // you can view this message in the docker compose logs
-    obj.done(); // success, release the connection;
+    console.log('Database connection successful');
+    obj.done();
   })
   .catch(error => {
     console.log('ERROR:', error.message || error);
   });
 
 // *****************************************************
-// <!-- Section 3 : App Settings -->
+// Section 3 : App Settings
 // *****************************************************
 
-// Register `hbs` as our view engine using its bound `engine()` function.
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 
-// initialize session variables
+app.use(bodyParser.json());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -70,21 +69,193 @@ app.use(
   })
 );
 
+app.use(express.static(__dirname + '/resources'));
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
+
 // *****************************************************
-// <!-- Section 4 : API Routes -->
+// Section 4 : API Routes
 // *****************************************************
 
 const auth = (req, res, next) => {
   if (!req.session.user) {
-    // Default to login page.
     return res.redirect('/login');
   }
   next();
 };
 
-app.get('/', (req, res) =>
-{
-    res.render('pages/home.hbs')
+const no_auth = (req, res, next) => {
+  if (req.session.user) {
+    return res.redirect('/');
+  }
+  next();
+};
+
+// Home page
+app.get('/', (req, res) => {
+  res.render('pages/home.hbs');
+});
+
+// Forgot Password Route, Saanvi
+app.get('/forgot-password', (req, res) => {
+  res.render('pages/forgot-password.hbs');
+});
+
+// Financials
+app.get('/financials', async (req, res) => {
+  try {
+    const username = 'bobLovesdogs4';
+
+    const row = await db.one(
+      'SELECT savings FROM usersavings WHERE username = $1',
+      [username]
+    );
+
+    res.render('pages/financials', { savings: row.savings });
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+
+    res.render('pages/financials', {
+      savings: null,
+      message: 'Could not load savings.',
+      error: true,
+    });
+  }
+});
+
+// Registration page
+app.get('/register', no_auth, (req, res) => {
+  res.render('pages/register.hbs');
+});
+
+// Registration submission
+app.post('/register', no_auth, async (req, res) => {
+  const pass = req.body.password;
+  const passConfirm = req.body.confirmPassword;
+  const usr = req.body.username;
+  const usrName = req.body.name;
+  const email = req.body.email;
+
+  if (!pass || !passConfirm || !usr || !usrName || !email) {
+    return res.status(400).send('Please complete all registration fields.');
+  }
+
+  if (pass !== passConfirm) {
+    return res.status(400).send('Passwords do not match.');
+  }
+
+  try {
+    // Hash the user's password
+    const hash = await bcrypt.hash(pass, 10);
+
+    // Generate a secure verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Hash the token before saving it in the database
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    // Set token expiration to 24 hours
+    const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Insert the new user into the database
+    await db.none(
+      `INSERT INTO users
+       (username, email, name, password, email_verified,
+        verification_token, verification_token_expires)
+       VALUES ($1, $2, $3, $4, FALSE, $5, $6)`,
+      [usr, email, usrName, hash, tokenHash, tokenExpiration]
+    );
+
+    // Create the verification link
+    const verificationLink =
+      `${process.env.APP_URL}/verify-email?token=${verificationToken}`;
+
+    // Send the verification email
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: 'Verify Your BudgetApp Email',
+      text: `Hello ${usrName},
+
+Thank you for registering for BudgetApp!
+
+Please click the link below to verify your email address:
+
+${verificationLink}
+
+This link expires in 24 hours.`,
+      html: `
+        <h2>Welcome to BudgetApp!</h2>
+        <p>Hello ${usrName},</p>
+        <p>Please click the link below to verify your email address.</p>
+        <a href="${verificationLink}">Verify My Email</a>
+        <p>This link expires in 24 hours.</p>
+      `,
+    });
+
+    // Tell the user to check their email
+    res.status(201).send(
+      'Account created! Please check your email to verify your account.'
+    );
+
+  } catch (err) {
+    console.log('Registration error:', err.message || err);
+    res.status(400).send(
+      'Registration failed. Please check your information and try again.'
+    );
+  }
+});
+
+// Email verification route
+app.get('/verify-email', async (req, res) => {
+  const token = req.query.token;
+
+  if (!token) {
+    return res.status(400).send('Invalid verification link.');
+  }
+
+  try {
+    // Hash the token received from the email
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Verify the token and update the user's account
+    const result = await db.result(
+      `UPDATE users
+       SET email_verified = TRUE,
+           verification_token = NULL,
+           verification_token_expires = NULL
+       WHERE verification_token = $1
+       AND verification_token_expires > NOW()`,
+      [tokenHash]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).send(
+        'This verification link is invalid or has expired.'
+      );
+    }
+
+    res.send('Your email has been successfully verified!');
+
+  } catch (err) {
+    console.log('Verification error:', err.message || err);
+    res.status(500).send('Could not verify your email.');
+  }
 });
 
 
@@ -154,8 +325,9 @@ app.get('/dashboard', auth, (req, res) => {
 });
 
 // *****************************************************
-// <!-- Section 5 : Start Server-->
+// Section 5 : Start Server
 // *****************************************************
-// starting the server and keeping the connection open to listen for more requests
+
 app.listen(3000);
 console.log('Server is listening on port 3000');
+
