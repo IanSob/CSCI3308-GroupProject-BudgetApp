@@ -87,6 +87,72 @@ app.get('/', (req, res) =>
     res.render('pages/home.hbs')
 });
 
+
+ // GET /login - Display the login page
+app.get('/login', (req, res) => {
+    res.render('pages/login', {
+        message: '',
+        error: false
+    });
+});
+
+
+
+
+ // POST /login - Authenticate the user
+app.post('/login', async (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+
+    if (!username || !password) {
+        return res.render('pages/login', {
+            error: true,
+            message: 'Enter a username and password.'
+        });
+    }
+
+    try {
+        const user = await db.oneOrNone(
+            'SELECT username, password FROM users WHERE username = $1',
+            [username]
+        );
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.render('pages/login', {
+                error: true,
+                message: 'Incorrect username or password.'
+            });
+        }
+
+        req.session.regenerate((err) => {
+            if (err) {
+                return res.status(500).send('Login failed.');
+            }
+
+            req.session.user = { username: user.username };
+
+            req.session.save((err) => {
+                if (err) {
+                    return res.status(500).send('Unable to save session.');
+                }
+
+                res.redirect('/dashboard');
+            });
+        });
+
+    } catch (error) {
+        console.error('Login error:', error.message);
+        res.status(500).render('pages/login', {
+            error: true,
+            message: 'Login failed. Please try again.'
+        });
+    }
+});
+
+app.get('/dashboard', auth, (req, res) => {
+    res.send('Welcome to Budget Range Dashboard!');
+});
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
