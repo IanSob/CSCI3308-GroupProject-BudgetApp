@@ -101,6 +101,25 @@ app.get('/', (req, res) =>
     res.render('pages/home.hbs')
 });
 
+app.get('/financials', async (req, res) => {
+  try {
+    const username = 'bobLovesdogs4'; 
+
+    const row = await db.one(
+      'SELECT savings FROM usersavings WHERE username = $1',
+      [username]
+    );
+    res.render('pages/financials', { savings: row.savings });
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+    res.render('pages/financials', {
+      savings: null,
+      message: 'Could not load savings.',
+      error: true,
+    });
+  }
+});
+
 app.get('/register', no_auth, (req, res) =>
 {
   res.render('pages/register.hbs');
