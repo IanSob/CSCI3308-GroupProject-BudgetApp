@@ -1,0 +1,89 @@
+
+/* Website and desktop navbar — scoped styles only (CU-inspired black and gold). */
+.app-navbar { background: #fff; border-bottom: 1px solid #e6e4df; box-shadow: 0 2px 8px rgba(0,0,0,.035); min-height: 72px; }
+.app-navbar .app-nav-container { max-width: 1200px; padding: 12px 24px; }
+.app-navbar .app-brand { color: #1b1b1b; font-size: 1.15rem; font-weight: 750; letter-spacing: -.02em; white-space: normal; }
+.app-navbar .app-brand-gold { color: #776023; }
+.app-navbar .nav-link { color: #565a5c; font-size: .95rem; font-weight: 500; padding: .55rem .75rem; border-radius: 7px; }
+.app-navbar .nav-link:hover { color: #111; background: #f7f4ed; }
+.app-navbar .nav-link.active { color: #111; font-weight: 700; background: #f5efdf; }
+.app-navbar .app-nav-button { background: #1b1b1b; border: 1px solid #1b1b1b; color: #fff; border-radius: 7px; padding: .42rem .95rem; font-weight: 600; font-size: .9rem; }
+.app-navbar .app-nav-button:hover, .app-navbar .app-nav-button:focus-visible { background: #565a5c; border-color: #565a5c; color: #fff; }
+.app-navbar .app-toggler { border: 1px solid #d7d3c9; }
+.app-navbar a:focus-visible, .app-navbar button:focus-visible { outline: 3px solid #cfb87c; outline-offset: 2px; }
+@media (max-width: 991.98px) { .app-navbar .navbar-collapse { padding-top: 12px; } .app-navbar .app-nav-button { width: 100%; text-align: center; margin-top: 6px; } }
+
+/* === Flash Financial Savings: optional home and dashboard page styling === */
+/* CU-inspired colors are scoped to these two pages; navigation and teammates' pages remain unchanged. */
+.cu-home-page,.cu-dashboard-page{--cu-gold:#cfb87c;--cu-ink:#202326;--cu-gray:#565a5c;color:var(--cu-ink);padding-bottom:1.5rem}
+.cu-home-page .cu-eyebrow,.cu-dashboard-page .cu-eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.12em;color:#745d2e}
+.cu-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#cfb87c;margin-right:.45rem;vertical-align:middle}
+.cu-home-hero{background:linear-gradient(120deg,#fbfaf8,#f6f4ee);border:1px solid #e7e3d9;border-radius:16px;padding:clamp(1.5rem,3.8vw,3.3rem)}
+.cu-home-title{font-size:clamp(2.2rem,3.7vw,3.35rem);font-weight:800;letter-spacing:-.045em;line-height:1.12;max-width:620px}
+.cu-home-title span{color:#98752e}
+.cu-home-description{color:#565a5c;font-size:1.075rem;line-height:1.65;max-width:34rem}
+.cu-primary-action,.cu-secondary-action{padding:.72rem 1.4rem;font-weight:600;border-radius:9px}
+.cu-home-overview{padding:1.4rem;border:1px solid #e2ded4;border-radius:14px;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.045)}
+.cu-overline{font-size:.69rem;letter-spacing:.1em;font-weight:750;color:#777}
+.cu-overview-badge{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;color:#7c5c19;background:#f6edda}
+.cu-overview-item{display:flex;align-items:center;gap:.85rem;padding:.78rem 0;border-top:1px solid #efede7}
+.cu-overview-item>div{display:grid;gap:.05rem}
+.cu-overview-item strong{font-size:.95rem}
+.cu-overview-item small{font-size:.8rem;color:#737679}
+.cu-overview-symbol{display:grid;place-items:center;background:#f6f1e5;color:#765d24;border-radius:9px;font-size:1.1rem;font-weight:700;width:39px;height:39px}
+.cu-overview-footer{margin-top:.5rem;background:#faf7ef;border-radius:8px;color:#685529;font-size:.8rem;text-align:center;padding:.7rem}
+.cu-section-heading{display:flex;justify-content:space-between;align-items:end;gap:1rem;flex-wrap:wrap}
+.cu-section-heading p{font-size:.9rem}
+.cu-feature-card{border:1px solid #e7e3d9;background:#fff;border-radius:13px;padding:1.5rem}
+.cu-feature-number{display:inline-block;padding:.35rem .6rem;font-size:.82rem;font-weight:800;color:#806324;background:#f9f2e3;border-radius:7px}
+.cu-feature-card p{font-size:.94rem;line-height:1.55}
+.cu-page-note{border-top:1px solid #ece9e1;text-align:center;padding-top:1.2rem;margin:1.4rem 0 0;color:#75787b;font-size:.87rem}
+.cu-dashboard-header{display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.cu-dashboard-header h1{font-size:2.3rem;letter-spacing:-.035em}
+.cu-preview-chip{font-size:.77rem;padding:.4rem .7rem;border-radius:999px;background:#f8f3e6;color:#735a24;border:1px solid #ede4ca}
+.cu-dashboard-intro{position:relative;overflow:hidden;border-radius:14px;background:#222426;color:#fff;padding:2rem 2.25rem 2rem 2.55rem}
+.cu-intro-gold-rule{position:absolute;left:0;top:0;bottom:0;width:5px;background:#cfb87c}
+.cu-intro-eyebrow{font-size:.71rem;font-weight:800;letter-spacing:.12em;color:#e1c993}
+.cu-dashboard-intro h2{font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:750;margin:.6rem 0}
+.cu-dashboard-intro p{color:#dadbdd;font-size:.97rem;max-width:640px}
+.cu-summary-card{padding:1.4rem;border:1px solid #e7e3d9;border-radius:12px;background:#fff;border-top:3px solid #cfb87c}
+.cu-summary-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;color:#775e2b}
+.cu-summary-card h3{font-size:1.17rem;font-weight:700;margin:1rem 0 .35rem}
+.cu-summary-card p{font-size:.88rem;color:#75787a;margin:0}
+.cu-panel{border:1px solid #e7e3d9;background:#fff;border-radius:12px;padding:1.4rem}
+.cu-panel-header{display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;border-bottom:1px solid #f0ede7;padding-bottom:1rem}
+.cu-panel-status{background:#f7f3e9;border-radius:7px;padding:.3rem .55rem;color:#785f2b;font-size:.75rem}
+.cu-empty-overview{text-align:center;padding:2.2rem .6rem 1rem}
+.cu-empty-overview p{font-size:.88rem}
+.cu-sample-bars{height:76px;display:flex;align-items:end;justify-content:center;gap:11px;margin-bottom:1.4rem}
+.cu-sample-bars i{display:block;width:21px;border-radius:5px 5px 0 0;background:#e6dfd0;height:42px}
+.cu-sample-bars i:nth-child(2){height:60px;background:#d4c299}
+.cu-sample-bars i:nth-child(3){height:35px}
+.cu-sample-bars i:nth-child(4){height:71px;background:#cfb87c}
+.cu-sample-bars i:nth-child(5){height:51px}
+.cu-quick-link{display:flex;justify-content:space-between;align-items:center;color:#222426;text-decoration:none;padding:1.1rem .4rem;border-bottom:1px solid #f0ede7}
+.cu-quick-link:hover{color:#806427}
+.cu-quick-link strong,.cu-quick-link small{display:block}
+.cu-quick-link small{font-size:.81rem;color:#777;margin-top:.2rem}
+.cu-quick-note{font-size:.87rem;color:#76797b;margin-top:1rem}
+@media(max-width:767.98px){.cu-dashboard-intro{padding:1.6rem 1.6rem 1.6rem 1.9rem}.cu-home-hero{padding:1.6rem}.cu-home-title{font-size:2.35rem}}
+/* === End optional home and dashboard page styling === */
+
+/* === CU navbar + Home refinements v2 === */
+.app-navbar .app-nav-container{max-width:1320px}
+.app-navbar .nav-link{font-size:.89rem;padding:.5rem .59rem}
+.app-navbar .app-nav-soon{color:#8b8d90;cursor:default;white-space:nowrap}
+.app-navbar .app-nav-soon:hover{background:transparent;color:#8b8d90}
+.app-navbar .app-soon-label{display:inline-block;margin-left:.15rem;font-size:.62rem;font-weight:700;letter-spacing:.02em;color:#81651f;background:#f8f0df;border-radius:4px;padding:.12rem .24rem;vertical-align:middle}
+.app-navbar .app-nav-button{white-space:nowrap}
+.cu-home-v2 .cu-home-hero{padding:clamp(2rem,4.5vw,4.2rem);background:linear-gradient(112deg,#fbfaf7 0%,#f5f2ea 100%)}
+.cu-home-v2 .cu-home-title{max-width:580px;line-height:1.08;font-size:clamp(2.3rem,3.6vw,3.4rem)}
+.cu-home-v2 .cu-home-hint{font-size:.82rem;color:#737677}
+.cu-home-v2 .cu-home-overview{box-shadow:0 16px 36px rgba(0,0,0,.06)}
+.cu-home-v2 .cu-overview-symbol{font-size:1.15rem}
+.cu-home-v2 .cu-feature-card{transition:border-color .16s ease;min-height:165px}
+.cu-home-v2 .cu-feature-card:hover{border-color:#cfb87c}
+.cu-home-v2 .cu-feature-card h3{font-size:1.09rem}
+@media(max-width:1199.98px){.app-navbar .navbar-collapse{padding-top:12px}.app-navbar .app-nav-button{width:100%;text-align:center;margin-top:6px}}
+@media(max-width:767.98px){.cu-home-v2 .cu-home-hero{padding:1.6rem}.cu-home-v2 .cu-home-title{font-size:2.3rem}}
+/* === End CU navbar + Home refinements v2 === */

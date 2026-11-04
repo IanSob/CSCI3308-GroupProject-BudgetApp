@@ -100,6 +100,16 @@ const no_auth = (req, res, next) => {
   next();
 };
 
+// Shared display information for Handlebars. Route authorization stays unchanged.
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = Boolean(req.session.user);
+  res.locals.activeHome = req.path === '/';
+  res.locals.activeDashboard = req.path === '/dashboard';
+  res.locals.activeFinancials = req.path === '/financials';
+  res.locals.activeExpenses = req.path === '/expenses';
+  next();
+});
+
 // Home page
 app.get('/', (req, res) => {
   res.render('pages/home.hbs');
@@ -365,6 +375,15 @@ app.post('/login', async (req, res) => {
 
 app.get('/dashboard', auth, (req, res) => {
     res.send('Welcome to Budget Range Dashboard!');
+});
+
+// Log out the current user without affecting registration or login handling.
+app.post('/logout', auth, (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).send('Unable to log out.');
+    res.clearCookie('connect.sid');
+    res.redirect('/login');
+  });
 });
 
 // *****************************************************
