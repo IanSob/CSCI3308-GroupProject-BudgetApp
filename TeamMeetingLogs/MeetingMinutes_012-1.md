@@ -28,3 +28,12 @@ Options to change current savings/input
 Creating a new token/card for expenditures
 Modals for how recurring expenditures happen
 Creative functions for interpreting data
+
+
+11/3 Group Meeting Notes:
+- fixed the part with the app so we can include style sheet and javascript.
+- Made a simple register page, the validation part isn't done yet.
+- Login page in process.
+- Need to update the release notes.
+- Need to merge the code we've been working on.
+  
