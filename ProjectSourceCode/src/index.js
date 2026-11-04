@@ -105,6 +105,43 @@ app.get('/', (req, res) => {
   res.render('pages/home.hbs');
 });
 
+// Expenses Display
+app.get('/expenses', auth, async (req, res) => {
+  try {
+    const username = typeof req.session.user === 'string'
+      ? req.session.user
+      : req.session.user.username;
+
+    const expenses = await db.any(
+      `SELECT expense_id, expense_name, amount, category
+       FROM expenses
+       WHERE username = $1
+       ORDER BY expense_id DESC`,
+      [username]
+    );
+
+    const totalExpenses = expenses.reduce(
+      (total, expense) => total + Number(expense.amount),
+      0
+    );
+
+    res.render('pages/expenses.hbs', {
+      expenses: expenses,
+      hasExpenses: expenses.length > 0,
+      totalExpenses: totalExpenses.toFixed(2),
+    });
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+
+    res.status(500).render('pages/expenses.hbs', {
+      expenses: [],
+      hasExpenses: false,
+      totalExpenses: '0.00',
+      errorMessage: 'Unable to load expenses right now.',
+    });
+  }
+});
+
 // Forgot Password Route, Saanvi
 app.get('/forgot-password', (req, res) => {
   res.render('pages/forgot-password.hbs');

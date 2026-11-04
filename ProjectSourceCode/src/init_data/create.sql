@@ -32,3 +32,14 @@ CREATE TABLE IF NOT EXISTS userIncome
     incomeType VARCHAR(50) NOT NULL,
     amount DECIMAL(12,2) NOT NULL DEFAULT 0
 );
+
+-- User expenses table
+CREATE TABLE IF NOT EXISTS expenses
+(
+    expense_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    expense_name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    FOREIGN KEY (username) REFERENCES users(username)
+);
