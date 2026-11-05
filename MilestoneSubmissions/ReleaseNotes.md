@@ -16,10 +16,10 @@
 * Fixed not including resources files (@IanSob in https://github.com/IanSob/CSCI3308-GroupProject-BudgetApp/pull/20)
 
 ### Planned For Next Week
-* Project Page https://github.com/users/IanSob/projects/1?pane=issue&itemId=287576761
-* Dashboard/Home page https://github.com/users/IanSob/projects/1?pane=issue&itemId=287581484
-* Expenses https://github.com/users/IanSob/projects/1?pane=issue&itemId=287580648
-* Email verification https://github.com/users/IanSob/projects/1?pane=issue&itemId=287588798
+- [ ] Project Page https://github.com/users/IanSob/projects/1?pane=issue&itemId=287576761
+- [ ] Dashboard/Home page https://github.com/users/IanSob/projects/1?pane=issue&itemId=287581484
+- [ ] Expenses https://github.com/users/IanSob/projects/1?pane=issue&itemId=287580648
+- [ ] Email verification https://github.com/users/IanSob/projects/1?pane=issue&itemId=287588798
 
 ## Week 1 - 10/28/2026
 ### Added
@@ -38,9 +38,9 @@ Nothing changed from last meeting since this is the first meeting
 * wireframe folder properly created (N/A, @Hakeemi24)
 
 ### Planned for next week
-- [ ] Register Page made https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287565105
+- [X] Register Page made https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287565105
 - [ ] Website navigation bar https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287570973
 - [ ] Start on profile page https://github.com/users/IanSob/projects/1?pane=issue&itemId=287576761
-- [ ] Login page https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287563080
+- [X] Login page https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287563080
 - [ ] Expenses display https://github.com/users/IanSob/projects/1?pane=issue&itemId=287581159
 - [ ] Income and savings display https://github.com/users/IanSob/projects/1/views/1?pane=issue&itemId=287580832
