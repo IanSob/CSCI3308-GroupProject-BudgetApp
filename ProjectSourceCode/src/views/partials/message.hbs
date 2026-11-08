@@ -1,0 +1,6 @@
+{{!-- Used to display a message or error --}}
+{{#if message}}
+    <div class="alert {{#if error}}alert-danger{{else}}alert-success{{/if}}">
+    {{message}}
+    </div>
+{{/if}}

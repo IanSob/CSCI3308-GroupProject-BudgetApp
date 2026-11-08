@@ -285,7 +285,11 @@ app.post('/register', no_auth, async (req, res) =>
     // Passwords do not match
     if(pass != passConfirm)
     {
-      req.status(400).send("Passwords do not match!");
+      res.status(400).render('pages/register.hbs', 
+      {
+        err: true,
+        message: "Passwords do not match."
+      });
     }
     // Passwords match
     else
@@ -309,13 +313,21 @@ app.post('/register', no_auth, async (req, res) =>
       }
       catch (err)
       {
-        res.status(400).send("Problem creating user.");
+        res.status(400).render('pages/register.hbs', 
+        {
+          err: true,
+          message: "There was a problem creating your account. Check all information."
+        });
       }
     }
   }
   else
   {
-    res.status(400).send("Missing registration information!");
+    res.status(400).render('pages/register.hbs', 
+      {
+        err: true,
+        message: "Please fill out all information to register."
+      });
   }
 });
 
