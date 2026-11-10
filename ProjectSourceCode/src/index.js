@@ -135,11 +135,15 @@ app.get('/expenses', auth, async (req, res) => {
       0
     );
 
-    res.render('pages/expenses.hbs', {
-      expenses: expenses,
-      hasExpenses: expenses.length > 0,
-      totalExpenses: totalExpenses.toFixed(2),
-    });
+  res.render('pages/expenses.hbs', {
+    expenses: expenses,
+    hasExpenses: expenses.length > 0,
+    totalExpenses: totalExpenses.toFixed(2),
+    successMessage: req.query.success
+      ? 'Expense added successfully!'
+      : null,
+  });
+
   } catch (err) {
     console.log('ERROR:', err.message || err);
 
@@ -180,7 +184,7 @@ app.post('/expenses', auth, async (req, res) => {
       [username, expense_name.trim(), Number(amount), category]
     );
 
-    res.redirect('/expenses');
+    res.redirect('/expenses?success=1');
   } catch (err) {
     console.log('ERROR:', err.message || err);
     res.status(500).redirect('/expenses');
