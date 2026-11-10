@@ -6,14 +6,19 @@
         "bcryptjs": "^2.4.0",
         "body-parser": "^1.20.4",
         "express": "^4.6.1",
-        "express-handlebars": "^7.1.2",
+        "express-handlebars": "^9.0.4",
         "express-session": "^1.19.0",
         "nodemailer": "^10.3.1",
-        "nodemon": "^3.1.14",
+        "nodemon": "^3.1.11",
         "pg-promise": "^12.6.1"
     },
     "scripts": {
-        "prestart": "npm install",
-        "start": "nodemon index.js"
+        "start": "nodemon index.js",
+        "test": "mocha --timeout 10000 \"test/**/*.spec.js\""
+    },
+    "devDependencies": {
+        "chai": "4.5.0",
+        "chai-http": "4.4.0",
+        "mocha": "^12.0.3"
     }
 }
