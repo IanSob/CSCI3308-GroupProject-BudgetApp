@@ -157,13 +157,14 @@ app.get('/forgot-password', (req, res) => {
   res.render('pages/forgot-password.hbs');
 });
 
+
 // Financials
 app.get('/financials', auth, async (req, res) => {
   try {
     // TEMP: hardcoded test user until login is merged
     const username = req.session.user.username;
 
-    const savingsRow = await db.one(
+    const savingsRow = await db.oneOrNone(
       'SELECT savings FROM userSavings WHERE username = $1',
       [username]
     );
@@ -184,6 +185,41 @@ app.get('/financials', auth, async (req, res) => {
     });
   }
 });
+
+// Update Savings
+app.post('/savings', auth, async (req, res) => {
+  const amount = parseFloat(req.body.amount);
+  const change = req.body.action === 'remove' ? -amount : amount;
+
+  if (!(amount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  const username = req.session.user.username;
+
+  try {
+    // Make sure the user has a savings row (does nothing if they already do)
+    await db.none(
+      `INSERT INTO userSavings (username, savings)
+       VALUES ($1, 0)
+       ON CONFLICT (username) DO NOTHING`,
+      [username]
+    );
+
+    await db.none(
+      `UPDATE userSavings
+       SET savings = COALESCE(savings, 0) + $1
+       WHERE username = $2 AND COALESCE(savings, 0) + $1 >= 0`,
+      [change, username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+
 
 // Registration page
 app.get('/register', no_auth, (req, res) => {
