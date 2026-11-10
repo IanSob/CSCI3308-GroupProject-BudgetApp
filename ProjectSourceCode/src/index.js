@@ -219,6 +219,29 @@ app.post('/savings', auth, async (req, res) => {
   res.redirect('/financials');
 });
 
+// Add Income
+app.post('/income', auth, async (req, res) => {
+  const { incomeName, incomeType, amount } = req.body;
+  const parsedAmount = parseFloat(amount);
+  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+
+  if (!incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      `INSERT INTO userIncome (username, incomeName, incomeType, amount)
+       VALUES ($1, $2, $3, $4)`,
+      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
 
 
 // Registration page

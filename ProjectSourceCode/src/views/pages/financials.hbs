@@ -20,7 +20,7 @@
 <div class="row">
 
   {{! ===== RIGHT HALF: Expenses  ===== }}
-  <div class="col-12 col-md-6">
+  <div class="col-12 col-md-8">
     <section class="my-4">
       <h2 class="h4 border-bottom pb-2 mb-3">Expenses</h2>
 
@@ -29,7 +29,7 @@
   </div>
 
   {{! ===== LEFT HALF: Income ===== }}
-  <div class="col-12 col-md-6">
+  <div class="col-12 col-md-4">
     <section class="my-4">
       <h2 class="h4 border-bottom pb-2 mb-3">Income</h2>
 
@@ -47,6 +47,24 @@
         {{else}}
           <p class="text-muted small">No income sources yet.</p>
         {{/each}}
+      </div>
+
+      {{! Add Income button, styled as an empty card }}
+      <div class="row g-2 mt-1">
+        <div class="col-6 col-xl-4">
+          <button
+            type="button"
+            class="card w-100 bg-transparent text-muted"
+            style="border-style: dashed;"
+            data-bs-toggle="modal"
+            data-bs-target="#addIncomeModal"
+            aria-label="Add income"
+          >
+            <div class="card-body p-2 d-flex align-items-center justify-content-center">
+              <span class="fs-2 lh-1">+</span>
+            </div>
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -106,6 +124,80 @@
             Cancel
           </button>
           <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{! ===== Add Income Modal ===== }}
+<div
+  class="modal fade"
+  id="addIncomeModal"
+  tabindex="-1"
+  aria-labelledby="addIncomeModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <form id="addIncomeForm" action="/income" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addIncomeModalLabel">Add Income</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="incomeName" class="form-label">Income Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="incomeName"
+              name="incomeName"
+              maxlength="50"
+              placeholder="e.g. Campus Job"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label for="incomeType" class="form-label">Income Type</label>
+            <select class="form-select" id="incomeType" name="incomeType" required>
+              <option value="Hourly">Hourly</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Bi-Weekly">Bi-Weekly</option>
+              <option value="Monthly" selected>Monthly</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="incomeAmount" class="form-label">Amount</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                type="number"
+                class="form-control"
+                id="incomeAmount"
+                name="amount"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                required
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Add</button>
         </div>
       </form>
     </div>
