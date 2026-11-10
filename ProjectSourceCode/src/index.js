@@ -158,10 +158,10 @@ app.get('/forgot-password', (req, res) => {
 });
 
 // Financials
-app.get('/financials', async (req, res) => {
+app.get('/financials', auth, async (req, res) => {
   try {
     // TEMP: hardcoded test user until login is merged
-    const username = 'bobLovesdogs4';
+    const username = req.session.user.username;
 
     const savingsRow = await db.one(
       'SELECT savings FROM userSavings WHERE username = $1',
