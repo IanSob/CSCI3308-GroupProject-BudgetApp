@@ -2,6 +2,13 @@
 <!-- Budget App Dashboard -->
 <div class="container py-4">
 
+  
+{{#if errorMessage}}
+  <div class="alert alert-danger" role="alert">
+    {{errorMessage}}
+  </div>
+{{/if}}
+
   <!-- Page Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -11,185 +18,216 @@
       </p>
     </div>
 
-    <a href="/transactions" class="btn btn-primary">
-      + Add Transaction
-    </a>
-  </div>
-
-  <!-- Financial Summary Cards -->
-  <div class="row g-3 mb-4">
-
-    <!-- Balance -->
-    <div class="col-md-4">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title text-muted">
-            Total Balance
-          </h5>
-          <h2 class="card-text">
-            ${{totalBalance}}
-          </h2>
-        </div>
-      </div>
-    </div>
-
-    <!-- Income -->
-    <div class="col-md-4">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title text-muted">
-            Total Income
-          </h5>
-          <h2 class="card-text text-success">
-            ${{totalIncome}}
-          </h2>
-        </div>
-      </div>
-    </div>
-
-    <!-- Expenses -->
-    <div class="col-md-4">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title text-muted">
-            Total Expenses
-          </h5>
-          <h2 class="card-text text-danger">
-            ${{totalExpenses}}
-          </h2>
-        </div>
-      </div>
-    </div>
+    
+<a href="/expenses" class="btn btn-dark">
+  View Expenses
+</a>
 
   </div>
 
-  <!-- Budget and Quick Actions -->
-  <div class="row g-3 mb-4">
+ 
+<!-- Financial Summary Cards -->
+<div class="row g-3 mb-4">
 
-    <!-- Monthly Budget -->
-    <div class="col-md-6">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
+  <!-- Savings Card -->
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
 
-          <h5 class="card-title">
-            Monthly Budget
-          </h5>
-
-          <p class="text-muted">
-            Spending progress this month
-          </p>
-
-          <div class="progress mb-3"
-               role="progressbar"
-               aria-label="Monthly budget used"
-               aria-valuenow="{{budgetPercent}}"
-               aria-valuemin="0"
-               aria-valuemax="100">
-
-            <div class="progress-bar"
-                 style="width: {{budgetPercent}}%">
-            </div>
-          </div>
-
-          <p>
-            ${{budgetSpent}} spent of
-            ${{budgetLimit}}
-          </p>
-
-          <a href="/budgets"
-             class="btn btn-outline-primary">
-            Manage Budgets
-          </a>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="col-md-6">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-
-          <h5 class="card-title mb-3">
-            Quick Actions
-          </h5>
-
-          <div class="d-grid gap-2">
-
-            <a href="/transactions"
-               class="btn btn-outline-primary">
-              View Transactions
-            </a>
-
-            <a href="/budgets"
-               class="btn btn-outline-primary">
-              Manage Budgets
-            </a>
-
-            <a href="/insights"
-               class="btn btn-outline-primary">
-              View Insights
-            </a>
-
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Recent Transactions -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="card-title mb-0">
-          Recent Transactions
+        <h5 class="card-title text-muted">
+          Recorded Savings
         </h5>
 
-        <a href="/transactions">
-          View All
+        <h2 class="card-text">
+          ${{savingsAmount}}
+        </h2>
+
+        <a href="/financials" class="btn btn-outline-dark btn-sm">
+          View Financials
         </a>
+
       </div>
+    </div>
+  </div>
 
-      {{#if transactions.length}}
+  <!-- Income Sources Card -->
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
 
-        <div class="table-responsive">
-          <table class="table table-hover">
+        <h5 class="card-title text-muted">
+          Income Sources
+        </h5>
 
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Date</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
+        <h2 class="card-text text-success">
+          {{incomeCount}}
+        </h2>
 
-            <tbody>
-              {{#each transactions}}
-                <tr>
-                  <td>{{this.description}}</td>
-                  <td>{{this.category}}</td>
-                  <td>{{this.date}}</td>
-                  <td>${{this.amount}}</td>
-                </tr>
-              {{/each}}
-            </tbody>
+        <a href="/financials" class="btn btn-outline-dark btn-sm">
+          View Income
+        </a>
 
-          </table>
-        </div>
+      </div>
+    </div>
+  </div>
 
-      {{else}}
+  <!-- Expenses Card -->
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
 
-        <p class="text-muted">
-          No transactions to display yet.
-        </p>
+        <h5 class="card-title text-muted">
+          Total Recorded Expenses
+        </h5>
 
-      {{/if}}
+        <h2 class="card-text text-danger">
+          ${{totalExpenses}}
+        </h2>
 
+        <a href="/expenses" class="btn btn-outline-dark btn-sm">
+          View Expenses
+        </a>
+
+      </div>
     </div>
   </div>
 
 </div>
+
+
+  
+<!-- Income and Quick Actions -->
+<div class="row g-3 mb-4">
+
+  <!-- Income Sources -->
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+
+        <h5 class="card-title mb-3">
+          Income Sources
+        </h5>
+
+        {{#each incomes}}
+          <div class="d-flex justify-content-between
+                      align-items-center border-bottom py-2">
+
+            <div>
+              <strong>{{this.name}}</strong>
+              <p class="text-muted small mb-0">
+                {{this.type}}
+              </p>
+            </div>
+
+            <span class="fw-semibold">
+              ${{this.amount}}
+            </span>
+
+          </div>
+        {{else}}
+          <p class="text-muted">
+            No income sources recorded yet.
+          </p>
+        {{/each}}
+
+        <a href="/financials"
+           class="btn btn-outline-dark mt-3">
+          View Financials
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+
+        <h5 class="card-title mb-3">
+          Quick Actions
+        </h5>
+
+        <div class="d-grid gap-2">
+
+          <a href="/financials"
+             class="btn btn-outline-dark">
+            View Financials
+          </a>
+
+          <a href="/expenses"
+             class="btn btn-outline-dark">
+            View Expenses
+          </a>
+
+          <a href="/"
+             class="btn btn-outline-dark">
+            Return Home
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+  
+<!-- Recent Expenses -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between
+                align-items-center mb-3">
+
+      <h5 class="card-title mb-0">
+        Recent Expenses
+      </h5>
+
+      <a href="/expenses">
+        View All
+      </a>
+
+    </div>
+
+    {{#if hasExpenses}}
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Category</th>
+              <th class="text-end">Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {{#each recentExpenses}}
+              <tr>
+                <td>{{this.description}}</td>
+                <td>{{this.category}}</td>
+                <td class="text-end">
+                  ${{this.amount}}
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+
+        </table>
+      </div>
+
+    {{else}}
+
+      <p class="text-muted mb-0">
+        No expenses to display yet.
+      </p>
+
+    {{/if}}
+
+  </div>
+</div>
+
