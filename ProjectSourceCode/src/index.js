@@ -421,9 +421,86 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.get('/dashboard', auth, (req, res) => {
-    res.send('Welcome to Budget Range Dashboard!');
+// Dashboard Route
+app.get('/dashboard', auth, async (req, res) => {
+  try {
+    // Identify the logged-in user
+    const username =
+      typeof req.session.user === 'string'
+        ? req.session.user
+        : req.session.user.username;
+
+    // Get the user's savings
+    const savingsRow = await db.oneOrNone(
+      'SELECT savings FROM userSavings WHERE username = $1',
+      [username]
+    );
+
+    // Get the user's income sources
+    const incomes = await db.any(
+      `SELECT incomeName, incomeType, amount
+       FROM userIncome
+       WHERE username = $1
+       ORDER BY incomeID DESC`,
+      [username]
+    );
+
+    // Get the user's expenses
+    const expenses = await db.any(
+      `SELECT expense_id, expense_name, amount, category
+       FROM expenses
+       WHERE username = $1
+       ORDER BY expense_id DESC`,
+      [username]
+    );
+
+    // Calculate total expenses
+    const totalExpenses = expenses.reduce(
+      (total, expense) => total + Number(expense.amount),
+      0
+    );
+
+    // Format income sources for display
+    const formattedIncomes = incomes.map(income => ({
+      name: income.incomename,
+      type: income.incometype,
+      amount: Number(income.amount).toFixed(2)
+    }));
+
+    // Format the five most recent expense records
+    const recentExpenses = expenses.slice(0, 5).map(expense => ({
+      description: expense.expense_name,
+      category: expense.category,
+      amount: Number(expense.amount).toFixed(2)
+    }));
+
+    // Render the dashboard
+    res.render('pages/dashboard', {
+      username: username,
+      savingsAmount: Number(savingsRow?.savings ?? 0).toFixed(2),
+      totalExpenses: totalExpenses.toFixed(2),
+      incomeCount: formattedIncomes.length,
+      incomes: formattedIncomes,
+      recentExpenses: recentExpenses,
+      hasExpenses: recentExpenses.length > 0
+    });
+
+  } catch (error) {
+    console.error('Dashboard error:', error.message);
+
+    res.status(500).render('pages/dashboard', {
+      errorMessage: 'Unable to load your financial data.',
+      username: '',
+      savingsAmount: '0.00',
+      totalExpenses: '0.00',
+      incomeCount: 0,
+      incomes: [],
+      recentExpenses: [],
+      hasExpenses: false
+    });
+  }
 });
+
 
 // Log out the current user without affecting registration or login handling.
 app.post('/logout', auth, (req, res) => {
