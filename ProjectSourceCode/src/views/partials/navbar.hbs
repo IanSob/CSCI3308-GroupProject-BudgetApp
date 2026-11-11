@@ -34,7 +34,7 @@
 
 
         <li class="nav-item">
-          <a class="nav-link" href="/dashboard">
+          <a class="nav-link {{#if activeDashboard}}active fw-semibold{{/if}}" href="/dashboard">
             Dashboard
           </a>
         </li>
@@ -59,12 +59,18 @@
         </li>
 
 
+        {{#if isAuthenticated}}
         <li class="nav-item">
           <form action="/logout" method="POST" class="m-0"><button class="btn btn-dark btn-sm" type="submit">Logout</button></form>
         </li>
+        {{else}}
+        <li class="nav-item"><a class="nav-link {{#if activeLogin}}active fw-semibold{{/if}}" href="/login">Login</a></li>
+        <li class="nav-item"><a class="nav-link {{#if activeRegister}}active fw-semibold{{/if}}" href="/register">Register</a></li>
+        {{/if}}
 
       </ul>
 
     </div>
   </div>
 </nav>
+
