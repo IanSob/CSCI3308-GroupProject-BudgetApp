@@ -136,11 +136,15 @@ app.get('/expenses', auth, async (req, res) => {
       0
     );
 
-    res.render('pages/expenses.hbs', {
-      expenses: expenses,
-      hasExpenses: expenses.length > 0,
-      totalExpenses: totalExpenses.toFixed(2),
-    });
+  res.render('pages/expenses.hbs', {
+    expenses: expenses,
+    hasExpenses: expenses.length > 0,
+    totalExpenses: totalExpenses.toFixed(2),
+    successMessage: req.query.success
+      ? 'Expense added successfully!'
+      : null,
+  });
+
   } catch (err) {
     console.log('ERROR:', err.message || err);
 
@@ -150,6 +154,41 @@ app.get('/expenses', auth, async (req, res) => {
       totalExpenses: '0.00',
       errorMessage: 'Unable to load expenses right now.',
     });
+  }
+});
+
+// Expenses Input
+app.post('/expenses', auth, async (req, res) => {
+  try {
+    const username = typeof req.session.user === 'string'
+      ? req.session.user
+      : req.session.user.username;
+
+    const { expense_name, amount, category } = req.body;
+
+    // Validate required fields
+    if (
+      !expense_name ||
+      !expense_name.trim() ||
+      !amount ||
+      !category ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0
+    ) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    // Save expense to database
+    await db.none(
+      `INSERT INTO expenses (username, expense_name, amount, category)
+       VALUES ($1, $2, $3, $4)`,
+      [username, expense_name.trim(), Number(amount), category]
+    );
+
+    res.redirect('/expenses?success=1');
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+    res.status(500).redirect('/expenses');
   }
 });
 
