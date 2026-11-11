@@ -170,7 +170,10 @@ app.get('/financials', auth, async (req, res) => {
     );
 
     const incomes = await db.any(
-      'SELECT incomeName, incomeType, amount FROM userIncome WHERE username = $1',
+      `SELECT incomeID, incomeName, incomeType, amount
+      FROM userIncome
+      WHERE username = $1
+      ORDER BY incomeID`,
       [username]
     );
 
@@ -234,6 +237,51 @@ app.post('/income', auth, async (req, res) => {
       `INSERT INTO userIncome (username, incomeName, incomeType, amount)
        VALUES ($1, $2, $3, $4)`,
       [req.session.user.username, incomeName.trim(), incomeType, parsedAmount]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+// Edit Income
+app.post('/income/update', auth, async (req, res) => {
+  const { incomeId, incomeName, incomeType, amount } = req.body;
+  const id = parseInt(incomeId, 10);
+  const parsedAmount = parseFloat(amount);
+  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+
+  if (!Number.isInteger(id) || !incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      `UPDATE userIncome
+       SET incomeName = $1, incomeType = $2, amount = $3
+       WHERE incomeID = $4 AND username = $5`,
+      [incomeName.trim(), incomeType, parsedAmount, id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+// Remove Income
+app.post('/income/delete', auth, async (req, res) => {
+  const id = parseInt(req.body.incomeId, 10);
+
+  if (!Number.isInteger(id)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      'DELETE FROM userIncome WHERE incomeID = $1 AND username = $2',
+      [id, req.session.user.username]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
