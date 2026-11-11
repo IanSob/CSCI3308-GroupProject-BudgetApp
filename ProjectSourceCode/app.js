@@ -15,6 +15,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const validation = require('./src/validation');
 
 // *****************************************************
 // Section 2 : Connect to DB
@@ -22,8 +23,8 @@ const crypto = require('crypto');
 
 const hbs = handlebars.create({
   extname: 'hbs',
-  layoutsDir: __dirname + '/views/layouts',
-  partialsDir: __dirname + '/views/partials',
+  layoutsDir: __dirname + '/src/views/layouts',
+  partialsDir: __dirname + '/src/views/partials',
 });
 
 // Old config
@@ -69,7 +70,7 @@ db.connect()
 
 app.engine('hbs', hbs.engine);
 app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '/src/views'));
 
 app.use(bodyParser.json());
 
@@ -87,7 +88,7 @@ app.use(
   })
 );
 
-app.use(express.static(__dirname + '/resources'));
+app.use(express.static(__dirname + '/src/resources'));
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -301,43 +302,45 @@ app.post('/register', no_auth, async (req, res) =>
   const usrName = req.body.name;
   const email = req.body.email;
 
+  errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
+  console.log(errMessage);
   // We have all the required data
-  if(pass && passConfirm && usr && usrName && email)
+  if(!errMessage)
   {
-    // Passwords do not match
-    if(pass != passConfirm)
+    // The hashed password
+    const hash = await bcrypt.hash(pass, 10);
+
+    try
     {
-      req.status(400).send("Passwords do not match!");
+      const query = `INSERT INTO users (username, email, name, password)
+      VALUES ('${usr}', '${email}', '${usrName}', '${hash}');`;
+
+      await db.none(query);
+
+      // Save the session after creating the account
+      req.session.user = usr;
+      req.session.save();
+
+      // Redirect to the home page after account created
+      res.redirect(201, '/');
     }
-    // Passwords match
-    else
+    catch (err)
     {
-      // The hashed password
-      const hash = await bcrypt.hash(pass, 10);
-
-      try
+      res.status(400).render('pages/register.hbs', 
       {
-        const query = `INSERT INTO users (username, email, name, password)
-        VALUES ('${usr}', '${email}', '${usrName}', '${hash}');`;
-
-        await db.none(query);
-
-        // Save the session after creating the account
-        req.session.user = usr;
-        req.session.save();
-
-        // Redirect to the home page after account created
-        res.status(201).redirect('/');
-      }
-      catch (err)
-      {
-        res.status(400).send("Problem creating user.");
-      }
+        error: true,
+        message: "There was a problem creating your account. Check all information."
+      });
     }
+    
   }
   else
   {
-    res.status(400).send("Missing registration information!");
+    res.status(400).render('pages/register.hbs', 
+      {
+        error: true,
+        message: errMessage
+      });
   }
 });
 
