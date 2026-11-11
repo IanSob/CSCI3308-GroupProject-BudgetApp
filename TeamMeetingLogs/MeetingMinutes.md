@@ -43,3 +43,12 @@ Creative functions for interpreting data
     - Keeps the code consistent and correct
 - Continue to work on expenses especially
 - Assign different user stories to everyone
+
+11/10 group meeting notes:
+- tests and registers being worked on
+- register page should look like the login page
+- inputting the md files
+- User input for the financials page
+- basic level input for savings
+- Not pulling or merging changes fully yet
+- MD file is currently a draft
