@@ -52,3 +52,9 @@ Creative functions for interpreting data
 - basic level input for savings
 - Not pulling or merging changes fully yet
 - MD file is currently a draft
+
+11/11 TA Meeting Notes:
+- Submit assignment in canvas
+- release notes, team notes
+- work day tomorrow, so we will start deployment next week
+- Hope to get financials working by next Thursday
