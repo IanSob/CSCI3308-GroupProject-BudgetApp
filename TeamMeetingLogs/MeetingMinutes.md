@@ -44,7 +44,7 @@ Creative functions for interpreting data
 - Continue to work on expenses especially
 - Assign different user stories to everyone
 
-11/10 meeting notes:
+11/10 group meeting notes:
 - tests and registers being worked on
 - register page should look like the login page
 - inputting the md files
