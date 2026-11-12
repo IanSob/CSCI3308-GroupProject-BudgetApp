@@ -43,3 +43,30 @@ CREATE TABLE IF NOT EXISTS expenses
     category VARCHAR(50) NOT NULL,
     FOREIGN KEY (username) REFERENCES users(username)
 );
+
+-- Recurring expenses schedules
+CREATE TABLE IF NOT EXISTS recurring_expenses
+(
+    recurring_expense_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+    expense_name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    category VARCHAR(50) NOT NULL,
+    frequency VARCHAR(20) NOT NULL
+        CHECK (frequency IN ('weekly', 'biweekly', 'monthly', 'yearly')),
+    start_date DATE NOT NULL,
+    next_due_date DATE NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Tracks generated recurring payments to prevent duplicates
+CREATE TABLE IF NOT EXISTS recurring_expense_payments
+(
+    payment_id SERIAL PRIMARY KEY,
+    recurring_expense_id INTEGER NOT NULL
+        REFERENCES recurring_expenses(recurring_expense_id) ON DELETE CASCADE,
+    due_date DATE NOT NULL,
+    expense_id INTEGER NOT NULL
+        REFERENCES expenses(expense_id) ON DELETE CASCADE,
+    UNIQUE (recurring_expense_id, due_date)
+);
