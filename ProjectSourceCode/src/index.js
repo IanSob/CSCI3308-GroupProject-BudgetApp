@@ -460,7 +460,7 @@ app.post('/register', no_auth, async (req, res) =>
             return res.status(500).send('Unable to save session.');
           }
 
-          res.redirect('/dashboard');
+          res.redirect(303, '/dashboard');
         });
       });
     }
