@@ -1,4 +1,3 @@
-
 // *****************************************************
 // Section 1 : Import Dependencies
 // *****************************************************
@@ -101,6 +100,12 @@ const no_auth = (req, res, next) => {
   next();
 };
 
+// The session always stores { username }; older code stored a bare string.
+const getUsername = (req) =>
+  typeof req.session.user === 'string'
+    ? req.session.user
+    : req.session.user.username;
+
 // Shared display information for Handlebars. Route authorization stays unchanged.
 app.use((req, res, next) => {
   res.locals.isAuthenticated = Boolean(req.session.user);
@@ -108,6 +113,8 @@ app.use((req, res, next) => {
   res.locals.activeDashboard = req.path === '/dashboard';
   res.locals.activeFinancials = req.path === '/financials';
   res.locals.activeExpenses = req.path === '/expenses';
+  res.locals.activeLogin = req.path === '/login';
+  res.locals.activeRegister = req.path === '/register';
   next();
 });
 
@@ -119,9 +126,7 @@ app.get('/', (req, res) => {
 // Expenses Display
 app.get('/expenses', auth, async (req, res) => {
   try {
-    const username = typeof req.session.user === 'string'
-      ? req.session.user
-      : req.session.user.username;
+    const username = getUsername(req);
 
     const expenses = await db.any(
       `SELECT expense_id, expense_name, amount, category
@@ -136,11 +141,15 @@ app.get('/expenses', auth, async (req, res) => {
       0
     );
 
-    res.render('pages/expenses.hbs', {
-      expenses: expenses,
-      hasExpenses: expenses.length > 0,
-      totalExpenses: totalExpenses.toFixed(2),
-    });
+  res.render('pages/expenses.hbs', {
+    expenses: expenses,
+    hasExpenses: expenses.length > 0,
+    totalExpenses: totalExpenses.toFixed(2),
+    successMessage: req.query.success
+      ? 'Expense added successfully!'
+      : null,
+  });
+
   } catch (err) {
     console.log('ERROR:', err.message || err);
 
@@ -153,28 +162,68 @@ app.get('/expenses', auth, async (req, res) => {
   }
 });
 
+// Expenses Input
+app.post('/expenses', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+
+    const { expense_name, amount, category } = req.body;
+
+    // Validate required fields
+    if (
+      !expense_name ||
+      !expense_name.trim() ||
+      !amount ||
+      !category ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0
+    ) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    // Save expense to database
+    await db.none(
+      `INSERT INTO expenses (username, expense_name, amount, category)
+       VALUES ($1, $2, $3, $4)`,
+      [username, expense_name.trim(), Number(amount), category]
+    );
+
+    res.redirect('/expenses?success=1');
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
 // Forgot Password Route, Saanvi
 app.get('/forgot-password', (req, res) => {
   res.render('pages/forgot-password.hbs');
 });
 
-// Financials
-app.get('/financials', async (req, res) => {
-  try {
-    // TEMP: hardcoded test user until login is merged
-    const username = 'bobLovesdogs4';
 
-    const savingsRow = await db.one(
+// Financials
+app.get('/financials', auth, async (req, res) => {
+  try {
+    const username = req.session.user.username;
+
+
+    const savingsRow = await db.oneOrNone(
       'SELECT savings FROM userSavings WHERE username = $1',
       [username]
     );
 
     const incomes = await db.any(
-      'SELECT incomeName, incomeType, amount FROM userIncome WHERE username = $1',
+      `SELECT incomeID, incomeName, incomeType, amount
+      FROM userIncome
+      WHERE username = $1
+      ORDER BY incomeID`,
       [username]
     );
 
-    res.render('pages/financials', { savings: savingsRow.savings, incomes });
+    res.render('pages/financials', {
+      savings: savingsRow ? savingsRow.savings : 0,
+      incomes,
+    });
   } catch (err) {
     console.log('ERROR:', err.message || err);
     res.render('pages/financials', {
@@ -185,6 +234,109 @@ app.get('/financials', async (req, res) => {
     });
   }
 });
+
+// Update Savings
+app.post('/savings', auth, async (req, res) => {
+  const amount = parseFloat(req.body.amount);
+  const change = req.body.action === 'remove' ? -amount : amount;
+
+  if (!(amount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  const username = req.session.user.username;
+
+  try {
+    // Make sure the user has a savings row (does nothing if they already do)
+    await db.none(
+      `INSERT INTO userSavings (username, savings)
+       VALUES ($1, 0)
+       ON CONFLICT (username) DO NOTHING`,
+      [username]
+    );
+
+    await db.none(
+      `UPDATE userSavings
+       SET savings = COALESCE(savings, 0) + $1
+       WHERE username = $2 AND COALESCE(savings, 0) + $1 >= 0`,
+      [change, username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+// Add Income
+app.post('/income', auth, async (req, res) => {
+  const { incomeName, incomeType, amount } = req.body;
+  const parsedAmount = parseFloat(amount);
+  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+
+  if (!incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      `INSERT INTO userIncome (username, incomeName, incomeType, amount)
+       VALUES ($1, $2, $3, $4)`,
+      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+// Edit Income
+app.post('/income/update', auth, async (req, res) => {
+  const { incomeId, incomeName, incomeType, amount } = req.body;
+  const id = parseInt(incomeId, 10);
+  const parsedAmount = parseFloat(amount);
+  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+
+  if (!Number.isInteger(id) || !incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      `UPDATE userIncome
+       SET incomeName = $1, incomeType = $2, amount = $3
+       WHERE incomeID = $4 AND username = $5`,
+      [incomeName.trim(), incomeType, parsedAmount, id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+// Remove Income
+app.post('/income/delete', auth, async (req, res) => {
+  const id = parseInt(req.body.incomeId, 10);
+
+  if (!Number.isInteger(id)) {
+    return res.redirect('/financials');
+  }
+
+  try {
+    await db.none(
+      'DELETE FROM userIncome WHERE incomeID = $1 AND username = $2',
+      [id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+
+  res.redirect('/financials');
+});
+
+
 
 // Registration page
 app.get('/register', no_auth, (req, res) => {
@@ -276,34 +428,45 @@ app.post('/register', no_auth, async (req, res) =>
 {
   const pass = req.body.password;
   const passConfirm = req.body.passwordConfirm;
-  const usr = req.body.username;
-  const usrName = req.body.name;
-  const email = req.body.email;
+  const usr = String(req.body.username || '').trim();
+  const usrName = String(req.body.name || '').trim();
+  const email = String(req.body.email || '').trim();
 
-  errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
-  console.log(errMessage);
+  const errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
   // We have all the required data
   if(!errMessage)
   {
-    // The hashed password
-    const hash = await bcrypt.hash(pass, 10);
-
     try
     {
-      const query = `INSERT INTO users (username, email, name, password)
-      VALUES ('${usr}', '${email}', '${usrName}', '${hash}');`;
+      // The hashed password
+      const hash = await bcrypt.hash(pass, 10);
 
-      await db.none(query);
+      await db.none(
+        `INSERT INTO users (username, email, name, password)
+         VALUES ($1, $2, $3, $4)`,
+        [usr, email, usrName, hash]
+      );
 
-      // Save the session after creating the account
-      req.session.user = usr;
-      req.session.save();
+      // Log the new user in with the same session shape as /login
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).send('Unable to start your session.');
+        }
 
-      // Redirect to the home page after account created
-      res.redirect(201, '/');
+        req.session.user = { username: usr };
+
+        req.session.save((err) => {
+          if (err) {
+            return res.status(500).send('Unable to save session.');
+          }
+
+          res.redirect('/dashboard');
+        });
+      });
     }
     catch (err)
     {
+      console.error('Registration error:', err.message || err);
       res.status(400).render('pages/register.hbs', 
       {
         error: true,
@@ -364,7 +527,7 @@ app.get('/verify-email', async (req, res) => {
 
 
  // GET /login - Display the login page
-app.get('/login', (req, res) => {
+app.get('/login', no_auth, (req, res) => {
     res.render('pages/login', {
         message: '',
         error: false
@@ -375,12 +538,12 @@ app.get('/login', (req, res) => {
 
 
  // POST /login - Authenticate the user
-app.post('/login', async (req, res) => {
+app.post('/login', no_auth, async (req, res) => {
     const username = String(req.body.username || '').trim();
     const password = String(req.body.password || '');
 
     if (!username || !password) {
-        return res.render('pages/login', {
+        return res.status(400).render('pages/login', {
             error: true,
             message: 'Enter a username and password.'
         });
@@ -393,7 +556,7 @@ app.post('/login', async (req, res) => {
         );
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.render('pages/login', {
+            return res.status(401).render('pages/login', {
                 error: true,
                 message: 'Incorrect username or password.'
             });
@@ -424,9 +587,86 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.get('/dashboard', auth, (req, res) => {
-    res.send('Welcome to Budget Range Dashboard!');
+// Dashboard Route
+app.get('/dashboard', auth, async (req, res) => {
+  try {
+    // Identify the logged-in user
+    const username =
+      typeof req.session.user === 'string'
+        ? req.session.user
+        : req.session.user.username;
+
+    // Get the user's savings
+    const savingsRow = await db.oneOrNone(
+      'SELECT savings FROM userSavings WHERE username = $1',
+      [username]
+    );
+
+    // Get the user's income sources
+    const incomes = await db.any(
+      `SELECT incomeName, incomeType, amount
+       FROM userIncome
+       WHERE username = $1
+       ORDER BY incomeID DESC`,
+      [username]
+    );
+
+    // Get the user's expenses
+    const expenses = await db.any(
+      `SELECT expense_id, expense_name, amount, category
+       FROM expenses
+       WHERE username = $1
+       ORDER BY expense_id DESC`,
+      [username]
+    );
+
+    // Calculate total expenses
+    const totalExpenses = expenses.reduce(
+      (total, expense) => total + Number(expense.amount),
+      0
+    );
+
+    // Format income sources for display
+    const formattedIncomes = incomes.map(income => ({
+      name: income.incomename,
+      type: income.incometype,
+      amount: Number(income.amount).toFixed(2)
+    }));
+
+    // Format the five most recent expense records
+    const recentExpenses = expenses.slice(0, 5).map(expense => ({
+      description: expense.expense_name,
+      category: expense.category,
+      amount: Number(expense.amount).toFixed(2)
+    }));
+
+    // Render the dashboard
+    res.render('pages/dashboard', {
+      username: username,
+      savingsAmount: Number(savingsRow?.savings ?? 0).toFixed(2),
+      totalExpenses: totalExpenses.toFixed(2),
+      incomeCount: formattedIncomes.length,
+      incomes: formattedIncomes,
+      recentExpenses: recentExpenses,
+      hasExpenses: recentExpenses.length > 0
+    });
+
+  } catch (error) {
+    console.error('Dashboard error:', error.message);
+
+    res.status(500).render('pages/dashboard', {
+      errorMessage: 'Unable to load your financial data.',
+      username: '',
+      savingsAmount: '0.00',
+      totalExpenses: '0.00',
+      incomeCount: 0,
+      incomes: [],
+      recentExpenses: [],
+      hasExpenses: false
+    });
+  }
 });
+
 
 // Log out the current user without affecting registration or login handling.
 app.post('/logout', auth, (req, res) => {
@@ -443,4 +683,3 @@ app.post('/logout', auth, (req, res) => {
 
 app.listen(3000);
 console.log('Server is listening on port 3000');
-
