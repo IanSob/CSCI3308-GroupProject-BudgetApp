@@ -1,38 +1,69 @@
-<h1>Financials</h1>
-
+<h1>Savings and Accounts</h1>
+ 
+{{! Total is now calculated from all savings accounts, so there is no edit button here }}
 <div class="card my-3">
-  <div class="card-body d-flex justify-content-between align-items-center">
-    <div>
-      <h5 class="card-title">Savings</h5>
-      <p class="card-text mb-0">${{savings}}</p>
-    </div>
-    <button
-      type="button"
-      class="btn btn-primary"
-      data-bs-toggle="modal"
-      data-bs-target="#editSavingsModal"
-    >
-      Edit Savings
-    </button>
+  <div class="card-body">
+    <h5 class="card-title">Total Savings</h5>
+    <p class="card-text mb-0">${{savings}}</p>
   </div>
 </div>
-
+ 
 <div class="row">
-
-  {{! ===== RIGHT HALF: Expenses  ===== }}
-  <div class="col-12 col-md-8">
+ 
+  {{! ===== RIGHT HALF: Savings/Accounts  ===== }}
+  <div class="col-12 col-md-7">
     <section class="my-4">
-      <h2 class="h4 border-bottom pb-2 mb-3">Expenses</h2>
-
-      {{! TODO: add expense cards here }}
+      <h2 class="h4 border-bottom pb-2 mb-3">Savings/Accounts</h2>
+ 
+      <div class="row g-2">
+        {{#each savingsAccounts}}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <div
+              class="card h-100"
+              role="button"
+              style="cursor: pointer;"
+              data-bs-toggle="modal"
+              data-bs-target="#editSavingsModal"
+              data-id="{{savingsid}}"
+              data-name="{{accountname}}"
+              data-amount="{{amount}}"
+            >
+              <div class="card-body p-2">
+                <h6 class="card-title mb-1">{{accountname}}</h6>
+                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
+              </div>
+            </div>
+          </div>
+        {{else}}
+          <p class="text-muted small">No savings accounts yet.</p>
+        {{/each}}
+      </div>
+ 
+      {{! Add Savings button, styled as an empty card }}
+      <div class="row g-2 mt-1">
+        <div class="col-6 col-lg-4">
+          <button
+            type="button"
+            class="card w-100 bg-transparent text-muted"
+            style="border-style: dashed;"
+            data-bs-toggle="modal"
+            data-bs-target="#addSavingsModal"
+            aria-label="Add savings account"
+          >
+            <div class="card-body p-2 d-flex align-items-center justify-content-center">
+              <span class="fs-2 lh-1">+</span>
+            </div>
+          </button>
+        </div>
+      </div>
     </section>
   </div>
-
+ 
   {{! ===== LEFT HALF: Income ===== }}
-  <div class="col-12 col-md-4">
+  <div class="col-12 col-md-3">
     <section class="my-4">
       <h2 class="h4 border-bottom pb-2 mb-3">Income</h2>
-
+ 
       <div class="row g-2">
         {{#each incomes}}
           <div class="col-12 col-xl-6">
@@ -58,7 +89,7 @@
           <p class="text-muted small">No income sources yet.</p>
         {{/each}}
       </div>
-
+ 
       {{! Add Income button, styled as an empty card }}
       <div class="row g-2 mt-1">
         <div class="col-6 col-xl-4">
@@ -78,9 +109,73 @@
       </div>
     </section>
   </div>
-
+ 
 </div>
-
+ 
+{{! ===== Add Savings Modal ===== }}
+<div
+  class="modal fade"
+  id="addSavingsModal"
+  tabindex="-1"
+  aria-labelledby="addSavingsModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <form id="addSavingsForm" action="/savings" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addSavingsModalLabel">Add Savings Account</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+ 
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="savingsName" class="form-label">Account Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="savingsName"
+              name="accountName"
+              maxlength="50"
+              placeholder="e.g. Emergency Fund"
+              required
+            >
+          </div>
+ 
+          <div class="mb-3">
+            <label for="savingsAmount" class="form-label">Amount Saved</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                type="number"
+                class="form-control"
+                id="savingsAmount"
+                name="amount"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                required
+              >
+            </div>
+          </div>
+        </div>
+ 
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+ 
 {{! ===== Edit Savings Modal ===== }}
 <div
   class="modal fade"
@@ -91,9 +186,11 @@
 >
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
-      <form id="editSavingsForm" action="/savings" method="POST">
+      <form id="editSavingsForm" action="/savings/update" method="POST">
+        <input type="hidden" id="editSavingsId" name="savingsId">
+ 
         <div class="modal-header">
-          <h5 class="modal-title" id="editSavingsModalLabel">Edit Savings</h5>
+          <h5 class="modal-title" id="editSavingsModalLabel">Edit Savings Account</h5>
           <button
             type="button"
             class="btn-close"
@@ -101,35 +198,47 @@
             aria-label="Close"
           ></button>
         </div>
-
+ 
         <div class="modal-body">
           <div class="mb-3">
-            <label for="savingsAction" class="form-label">Action</label>
-            <select class="form-select" id="savingsAction" name="action">
-              <option value="add" selected>Add to Savings</option>
-              <option value="remove">Remove from Savings</option>
-            </select>
+            <label for="editSavingsName" class="form-label">Account Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="editSavingsName"
+              name="accountName"
+              maxlength="50"
+              required
+            >
           </div>
-
+ 
           <div class="mb-3">
-            <label for="savingsAmount" class="form-label">Amount</label>
+            <label for="editSavingsAmount" class="form-label">Amount Saved</label>
             <div class="input-group">
               <span class="input-group-text">$</span>
               <input
                 type="number"
                 class="form-control"
-                id="savingsAmount"
+                id="editSavingsAmount"
                 name="amount"
-                min="0.01"
+                min="0"
                 step="0.01"
-                placeholder="0.00"
                 required
               >
             </div>
           </div>
         </div>
-
+ 
         <div class="modal-footer">
+          <button
+            type="submit"
+            class="btn btn-outline-danger me-auto"
+            formaction="/savings/delete"
+            formnovalidate
+            onclick="return confirm('Remove this savings account?');"
+          >
+            Remove
+          </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Cancel
           </button>
@@ -139,7 +248,7 @@
     </div>
   </div>
 </div>
-
+ 
 {{! ===== Add Income Modal ===== }}
 <div
   class="modal fade"
@@ -160,7 +269,7 @@
             aria-label="Close"
           ></button>
         </div>
-
+ 
         <div class="modal-body">
           <div class="mb-3">
             <label for="incomeName" class="form-label">Income Name</label>
@@ -174,7 +283,7 @@
               required
             >
           </div>
-
+ 
           <div class="mb-3">
             <label for="incomeType" class="form-label">Income Type</label>
             <select class="form-select" id="incomeType" name="incomeType" required>
@@ -184,7 +293,7 @@
               <option value="Monthly" selected>Monthly</option>
             </select>
           </div>
-
+ 
           <div class="mb-3">
             <label for="incomeAmount" class="form-label">Amount</label>
             <div class="input-group">
@@ -202,7 +311,7 @@
             </div>
           </div>
         </div>
-
+ 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Cancel
@@ -213,7 +322,7 @@
     </div>
   </div>
 </div>
-
+ 
 {{! ===== Edit Income Modal ===== }}
 <div
   class="modal fade"
@@ -226,7 +335,7 @@
     <div class="modal-content">
       <form id="editIncomeForm" action="/income/update" method="POST">
         <input type="hidden" id="editIncomeId" name="incomeId">
-
+ 
         <div class="modal-header">
           <h5 class="modal-title" id="editIncomeModalLabel">Edit Income</h5>
           <button
@@ -236,7 +345,7 @@
             aria-label="Close"
           ></button>
         </div>
-
+ 
         <div class="modal-body">
           <div class="mb-3">
             <label for="editIncomeName" class="form-label">Income Name</label>
@@ -249,7 +358,7 @@
               required
             >
           </div>
-
+ 
           <div class="mb-3">
             <label for="editIncomeType" class="form-label">Income Type</label>
             <select class="form-select" id="editIncomeType" name="incomeType" required>
@@ -259,7 +368,7 @@
               <option value="Monthly">Monthly</option>
             </select>
           </div>
-
+ 
           <div class="mb-3">
             <label for="editIncomeAmount" class="form-label">Amount</label>
             <div class="input-group">
@@ -276,7 +385,7 @@
             </div>
           </div>
         </div>
-
+ 
         <div class="modal-footer">
           <button
             type="submit"
@@ -296,9 +405,9 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
-  // Fill the edit modal with the values from the card that was clicked
+  // Fill the edit modals with the values from the card that was clicked
   document
     .getElementById('editIncomeModal')
     .addEventListener('show.bs.modal', function (event) {
@@ -308,4 +417,14 @@
       document.getElementById('editIncomeType').value = card.dataset.type;
       document.getElementById('editIncomeAmount').value = card.dataset.amount;
     });
+ 
+  document
+    .getElementById('editSavingsModal')
+    .addEventListener('show.bs.modal', function (event) {
+      const card = event.relatedTarget;
+      document.getElementById('editSavingsId').value = card.dataset.id;
+      document.getElementById('editSavingsName').value = card.dataset.name;
+      document.getElementById('editSavingsAmount').value = card.dataset.amount;
+    });
 </script>
+ 

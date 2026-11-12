@@ -205,68 +205,116 @@ app.get('/forgot-password', (req, res) => {
 app.get('/financials', auth, async (req, res) => {
   try {
     const username = req.session.user.username;
-
-
-    const savingsRow = await db.oneOrNone(
-      'SELECT savings FROM userSavings WHERE username = $1',
+ 
+    const savingsAccounts = await db.any(
+      `SELECT savingsID, accountName, amount
+       FROM userSavings
+       WHERE username = $1
+       ORDER BY savingsID`,
       [username]
     );
-
+ 
     const incomes = await db.any(
       `SELECT incomeID, incomeName, incomeType, amount
-      FROM userIncome
-      WHERE username = $1
-      ORDER BY incomeID`,
+       FROM userIncome
+       WHERE username = $1
+       ORDER BY incomeID`,
       [username]
     );
-
+ 
+    // DECIMAL columns come back from pg as strings, so convert before adding
+    const totalSavings = savingsAccounts.reduce(
+      (total, account) => total + Number(account.amount),
+      0
+    );
+ 
     res.render('pages/financials', {
-      savings: savingsRow ? savingsRow.savings : 0,
+      savings: totalSavings.toFixed(2),
+      savingsAccounts,
       incomes,
     });
   } catch (err) {
     console.log('ERROR:', err.message || err);
     res.render('pages/financials', {
-      savings: null,
+      savings: '0.00',
+      savingsAccounts: [],
       incomes: [],
       message: 'Could not load financial data.',
       error: true,
     });
   }
 });
-
-// Update Savings
+ 
+ 
+// ----- Add Savings Account -----
 app.post('/savings', auth, async (req, res) => {
-  const amount = parseFloat(req.body.amount);
-  const change = req.body.action === 'remove' ? -amount : amount;
-
-  if (!(amount > 0)) {
+  const { accountName, amount } = req.body;
+  const parsedAmount = parseFloat(amount);
+ 
+  if (!accountName || !accountName.trim() || accountName.trim().length > 50 || !(parsedAmount >= 0)) {
     return res.redirect('/financials');
   }
-
-  const username = req.session.user.username;
-
+ 
   try {
-    // Make sure the user has a savings row (does nothing if they already do)
     await db.none(
-      `INSERT INTO userSavings (username, savings)
-       VALUES ($1, 0)
-       ON CONFLICT (username) DO NOTHING`,
-      [username]
-    );
-
-    await db.none(
-      `UPDATE userSavings
-       SET savings = COALESCE(savings, 0) + $1
-       WHERE username = $2 AND COALESCE(savings, 0) + $1 >= 0`,
-      [change, username]
+      `INSERT INTO userSavings (username, accountName, amount)
+       VALUES ($1, $2, $3)`,
+      [req.session.user.username, accountName.trim(), parsedAmount]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
+ 
+ 
+// ----- Edit Savings Account -----
+app.post('/savings/update', auth, async (req, res) => {
+  const { savingsId, accountName, amount } = req.body;
+  const id = parseInt(savingsId, 10);
+  const parsedAmount = parseFloat(amount);
+ 
+  if (!Number.isInteger(id) || !accountName || !accountName.trim() || accountName.trim().length > 50 || !(parsedAmount >= 0)) {
+    return res.redirect('/financials');
+  }
+ 
+  try {
+    // "AND username = $4" makes sure users can only edit their own accounts
+    await db.none(
+      `UPDATE userSavings
+       SET accountName = $1, amount = $2
+       WHERE savingsID = $3 AND username = $4`,
+      [accountName.trim(), parsedAmount, id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+ 
+  res.redirect('/financials');
+});
+ 
+ 
+// ----- Remove Savings Account -----
+app.post('/savings/delete', auth, async (req, res) => {
+  const id = parseInt(req.body.savingsId, 10);
+ 
+  if (!Number.isInteger(id)) {
+    return res.redirect('/financials');
+  }
+ 
+  try {
+    await db.none(
+      'DELETE FROM userSavings WHERE savingsID = $1 AND username = $2',
+      [id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+ 
+  res.redirect('/financials');
+});
+
 
 // Add Income
 app.post('/income', auth, async (req, res) => {
@@ -597,10 +645,11 @@ app.get('/dashboard', auth, async (req, res) => {
         : req.session.user.username;
 
     // Get the user's savings
-    const savingsRow = await db.oneOrNone(
-      'SELECT savings FROM userSavings WHERE username = $1',
+    const savingsRow = await db.one(
+      'SELECT COALESCE(SUM(amount), 0) AS total FROM userSavings WHERE username = $1',
       [username]
-    );
+   );
+
 
     // Get the user's income sources
     const incomes = await db.any(
@@ -643,7 +692,7 @@ app.get('/dashboard', auth, async (req, res) => {
     // Render the dashboard
     res.render('pages/dashboard', {
       username: username,
-      savingsAmount: Number(savingsRow?.savings ?? 0).toFixed(2),
+      savingsAmount: Number(savingsRow.total).toFixed(2),
       totalExpenses: totalExpenses.toFixed(2),
       incomeCount: formattedIncomes.length,
       incomes: formattedIncomes,

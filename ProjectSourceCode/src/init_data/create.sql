@@ -19,18 +19,22 @@ ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP;
 -- User savings table
 CREATE TABLE IF NOT EXISTS userSavings
 (
-    username VARCHAR(50) PRIMARY KEY NOT NULL,
-    savings DECIMAL
+    savingsID SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    accountName VARCHAR(50) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (username) REFERENCES users(username)
 );
 
 -- User income table
 CREATE TABLE IF NOT EXISTS userIncome
 (
     incomeID SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+    username VARCHAR(50) NOT NULL,
     incomeName VARCHAR(50) NOT NULL,
     incomeType VARCHAR(50) NOT NULL,
-    amount DECIMAL(12,2) NOT NULL DEFAULT 0
+    amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (username) REFERENCES users(username)
 );
 
 -- User expenses table
