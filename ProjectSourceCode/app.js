@@ -27,33 +27,9 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/src/views/partials',
 });
 
-// Old config
-// const dbConfig = {
-//   host: 'db-test',
-//   port: 5432,
-//   database: process.env.POSTGRES_DB,
-//   user: process.env.POSTGRES_USER,
-//   password: process.env.POSTGRES_PASSWORD,
-// };
-
-// const db = pgp(dbConfig);
-
 // Config for the test
-const database = process.env.POSTGRES_DB;
-if (
-  process.env.NODE_ENV === 'test' &&
-  (!database || !database.endsWith('_test'))
-) {
-  throw new Error('Tests require a database name ending in _test');
-}
-
-const db = pgp({
-  host: process.env.POSTGRES_HOST,
-  port: Number(process.env.POSTGRES_PORT || 5432),
-  database,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-});
+const db_file = require('./src/db');
+const db = db_file.db;
 
 db.connect()
   .then(obj => {
@@ -303,7 +279,7 @@ app.post('/register', no_auth, async (req, res) =>
   const email = req.body.email;
 
   errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
-  console.log(errMessage);
+  
   // We have all the required data
   if(!errMessage)
   {
@@ -322,7 +298,7 @@ app.post('/register', no_auth, async (req, res) =>
       req.session.save();
 
       // Redirect to the home page after account created
-      res.redirect(201, '/');
+      res.redirect(303, '/');
     }
     catch (err)
     {
@@ -402,7 +378,7 @@ app.post('/login', async (req, res) => {
     const password = String(req.body.password || '');
 
     if (!username || !password) {
-        return res.render('pages/login', {
+        return res.status(400).render('pages/login', {
             error: true,
             message: 'Enter a username and password.'
         });
@@ -415,7 +391,7 @@ app.post('/login', async (req, res) => {
         );
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.render('pages/login', {
+            return res.status(400).render('pages/login', {
                 error: true,
                 message: 'Incorrect username or password.'
             });
