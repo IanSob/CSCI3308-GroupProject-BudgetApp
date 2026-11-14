@@ -1,117 +1,141 @@
-<h1>Savings and Accounts</h1>
- 
-{{! Total is now calculated from all savings accounts, so there is no edit button here }}
-<div class="card my-3">
-  <div class="card-body">
-    <h5 class="card-title">Total Savings</h5>
-    <p class="card-text mb-0">${{savings}}</p>
-  </div>
-</div>
- 
-<div class="row">
- 
-  {{! ===== RIGHT HALF: Savings/Accounts  ===== }}
-  <div class="col-12 col-md-7">
-    <section class="my-4">
-      <h2 class="h4 border-bottom pb-2 mb-3">Savings/Accounts</h2>
- 
-      <div class="row g-2">
-        {{#each savingsAccounts}}
-          <div class="col-12 col-sm-6 col-lg-4">
-            <div
-              class="card h-100"
-              role="button"
-              style="cursor: pointer;"
-              data-bs-toggle="modal"
-              data-bs-target="#editSavingsModal"
-              data-id="{{savingsid}}"
-              data-name="{{accountname}}"
-              data-amount="{{amount}}"
-            >
-              <div class="card-body p-2">
-                <h6 class="card-title mb-1">{{accountname}}</h6>
-                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
-              </div>
-            </div>
-          </div>
-        {{else}}
-          <p class="text-muted small">No savings accounts yet.</p>
-        {{/each}}
+{{! FINANCIALS_CU_COMBINED_V1 — Financial management and analysis, same route. }}
+<section class="finance-cu" aria-labelledby="finance-title">
+  <header class="finance-cu-header mb-4">
+    <div>
+      <p class="finance-cu-eyebrow mb-2">FLASH FINANCIAL SAVINGS</p>
+      <h1 id="finance-title" class="h2 fw-bold mb-2">Financials &amp; Analysis</h1>
+      <p class="text-muted mb-0">Manage your accounts, understand your expenses, and keep track of your savings.</p>
+    </div>
+    <div class="finance-cu-actions">
+      <a class="btn btn-dark" href="/expenses">View Expenses</a>
+      <button class="btn finance-cu-btn-gold" type="button" data-bs-toggle="modal" data-bs-target="#addSavingsModal">+ Savings Account</button>
+      <button class="btn btn-outline-dark" type="button" data-bs-toggle="modal" data-bs-target="#addIncomeModal">+ Income Source</button>
+    </div>
+  </header>
+
+  {{#if dataUnavailable}}
+    <div class="alert alert-warning" role="alert">
+      Some financial information could not be loaded ({{warnings}}). Check the database and try again.
+      Other sections may still work; unavailable values are not treated as $0.
+    </div>
+  {{/if}}
+
+  <ul class="nav finance-cu-tabs" id="financeTabs" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link active" id="finance-overview-tab" type="button" data-bs-toggle="tab" data-bs-target="#finance-overview" role="tab" aria-controls="finance-overview" aria-selected="true">Overview</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="finance-analysis-tab" type="button" data-bs-toggle="tab" data-bs-target="#finance-analysis" role="tab" aria-controls="finance-analysis" aria-selected="false">Analysis</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" id="finance-accounts-tab" type="button" data-bs-toggle="tab" data-bs-target="#finance-accounts" role="tab" aria-controls="finance-accounts" aria-selected="false">Accounts &amp; Income</button></li>
+  </ul>
+
+  <div class="tab-content pt-4" id="financeTabsContent">
+    <section class="tab-pane fade show active" id="finance-overview" role="tabpanel" aria-labelledby="finance-overview-tab" tabindex="0">
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3"><div class="finance-cu-stat"><div class="finance-cu-stat-label">Total Savings</div><div class="finance-cu-stat-number">{{#if savingsAvailable}}${{savingsLabel}}{{else}}Unavailable{{/if}}</div><p class="text-muted small mb-0">{{#if savingsAvailable}}{{savingsCount}} account(s){{else}}Savings data couldn't load{{/if}}</p></div></div>
+        <div class="col-12 col-sm-6 col-xl-3"><div class="finance-cu-stat"><div class="finance-cu-stat-label">Recorded Expenses</div><div class="finance-cu-stat-number">{{#if expensesAvailable}}${{expenseLabel}}{{else}}Unavailable{{/if}}</div><p class="text-muted small mb-0">{{#if expensesAvailable}}{{expenseCount}} entries total{{else}}Expense data couldn't load{{/if}}</p></div></div>
+        <div class="col-12 col-sm-6 col-xl-3"><div class="finance-cu-stat"><div class="finance-cu-stat-label">Income Sources</div><div class="finance-cu-stat-number">{{#if incomesAvailable}}{{incomeCount}}{{else}}Unavailable{{/if}}</div><p class="text-muted small mb-0">Amounts have different frequencies</p></div></div>
+        <div class="col-12 col-sm-6 col-xl-3"><div class="finance-cu-stat"><div class="finance-cu-stat-label">Expense Categories</div><div class="finance-cu-stat-number">{{#if expensesAvailable}}{{categoryCount}}{{else}}Unavailable{{/if}}</div><p class="text-muted small mb-0">Based on recorded expenses</p></div></div>
       </div>
- 
-      {{! Add Savings button, styled as an empty card }}
-      <div class="row g-2 mt-1">
-        <div class="col-6 col-lg-4">
-          <button
-            type="button"
-            class="card w-100 bg-transparent text-muted"
-            style="border-style: dashed;"
-            data-bs-toggle="modal"
-            data-bs-target="#addSavingsModal"
-            aria-label="Add savings account"
-          >
-            <div class="card-body p-2 d-flex align-items-center justify-content-center">
-              <span class="fs-2 lh-1">+</span>
-            </div>
-          </button>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-lg-7">
+          <div class="finance-cu-panel h-100">
+            <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Spending by Category</h2><span class="finance-cu-subtle">All recorded expenses</span></div>
+            {{#if expensesAvailable}}
+              {{#if hasCategories}}
+                <div class="row align-items-center g-4">
+                  <div class="col-sm-5"><div class="finance-cu-donut" style="background: {{categoryGradient}};" role="img" aria-label="Spending by category, listed in the adjacent table"><div class="finance-cu-donut-hole"><span class="small text-muted">Total spent</span><strong>${{expenseLabel}}</strong></div></div></div>
+                  <div class="col-sm-7"><div class="finance-cu-key">
+                    {{#each categories}}<div class="finance-cu-key-row"><span class="finance-cu-key-name"><span class="finance-cu-dot" style="background-color: {{color}}"></span>{{name}}</span><strong>${{totalLabel}}</strong><span class="finance-cu-key-pct">{{percent}}%</span></div>{{/each}}
+                  </div></div>
+                </div>
+              {{else}}
+                <div class="finance-cu-empty">No expenses yet. <a href="/expenses">Add an expense</a> to see your category chart.</div>
+              {{/if}}
+            {{else}}<div class="finance-cu-empty">Expense information is unavailable.</div>{{/if}}
+          </div>
         </div>
+        <div class="col-12 col-lg-5">
+          <div class="finance-cu-panel h-100">
+            <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Financial Snapshot</h2></div>
+            <div class="finance-cu-snapshot-row"><span>Average recorded expense</span><strong>{{#if expensesAvailable}}${{averageExpenseLabel}}{{else}}Unavailable{{/if}}</strong></div>
+            <div class="finance-cu-snapshot-row"><span>Largest spending category</span><strong>{{#if expensesAvailable}}{{#if highestCategory}}{{highestCategory.name}}{{else}}None yet{{/if}}{{else}}Unavailable{{/if}}</strong></div>
+            <div class="finance-cu-snapshot-row"><span>Savings accounts</span><strong>{{#if savingsAvailable}}{{savingsCount}}{{else}}Unavailable{{/if}}</strong></div>
+            <div class="finance-cu-snapshot-row"><span>Income sources</span><strong>{{#if incomesAvailable}}{{incomeCount}}{{else}}Unavailable{{/if}}</strong></div>
+            <p class="finance-cu-note mt-3 mb-0">This page summarizes saved records. It does not estimate monthly cash flow from income sources with different payment frequencies.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="finance-cu-panel mb-4">
+        <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Recently Added Expenses</h2><a class="finance-cu-link" href="/expenses">Manage expenses</a></div>
+        {{#if expensesAvailable}}
+          {{#if hasRecentExpenses}}
+            <div class="table-responsive"><table class="table table-hover align-middle finance-cu-table mb-0"><thead><tr><th scope="col">Description</th><th scope="col">Category</th><th scope="col" class="text-end">Amount</th></tr></thead><tbody>
+              {{#each latestExpenses}}<tr><td>{{name}}</td><td>{{category}}</td><td class="text-end fw-semibold">${{amountLabel}}</td></tr>{{/each}}
+            </tbody></table></div>
+          {{else}}<div class="finance-cu-empty">You haven't recorded any expenses yet.</div>{{/if}}
+        {{else}}<div class="finance-cu-empty">Expense records could not be loaded.</div>{{/if}}
+        <p class="finance-cu-note mb-0 mt-2">Ordered by entry ID, not transaction date (dates aren't stored yet).</p>
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="finance-analysis" role="tabpanel" aria-labelledby="finance-analysis-tab" tabindex="0">
+      <div class="row g-3 mb-4">
+        <div class="col-lg-7"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Where Your Money Goes</h2><span class="finance-cu-subtle">Share of all recorded spending</span></div>
+          {{#if expensesAvailable}}{{#if hasCategories}}
+            {{#each categories}}<div class="finance-cu-bar-item"><div class="d-flex justify-content-between gap-2 mb-2"><span>{{name}}</span><span class="fw-semibold">${{totalLabel}} <small class="text-muted">({{percent}}%)</small></span></div><div class="finance-cu-track"><div class="finance-cu-bar" style="width: {{barWidth}}%; background: {{color}}"></div></div></div>{{/each}}
+          {{else}}<div class="finance-cu-empty">Add expenses to see your spending breakdown.</div>{{/if}}{{else}}<div class="finance-cu-empty">Spending data is unavailable.</div>{{/if}}
+        </div></div>
+        <div class="col-lg-5"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Spending Insights</h2></div>
+          {{#if expensesAvailable}}
+            {{#if highestCategory}}<p>Your largest category is <strong>{{highestCategory.name}}</strong>, representing <strong>{{highestCategory.percent}}%</strong> of recorded expenses.</p>{{else}}<p>Record expenses to unlock useful insights.</p>{{/if}}
+            <div class="finance-cu-snapshot-row"><span>Recorded expenses</span><strong>{{expenseCount}}</strong></div>
+            <div class="finance-cu-snapshot-row"><span>Average expense</span><strong>${{averageExpenseLabel}}</strong></div>
+            <div class="finance-cu-snapshot-row"><span>Total spending</span><strong>${{expenseLabel}}</strong></div>
+          {{else}}<div class="finance-cu-empty">Spending insights are unavailable.</div>{{/if}}
+          <p class="finance-cu-note mt-3 mb-0">Monthly charts and budget-vs-actual progress need dated transactions and a budget-limit table. Neither is part of the current team schema.</p>
+        </div></div>
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-lg-7"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Savings Distribution</h2><span class="finance-cu-subtle">Your savings accounts</span></div>
+          {{#if savingsAvailable}}{{#if hasSavingsMix}}
+            <div class="finance-cu-stacked" role="img" aria-label="Savings distribution, listed below">{{#each savingsAccountsMix}}<span class="finance-cu-stacked-segment" style="width: {{percent}}%; background: {{color}}" title="{{accountName}}: {{percent}}%"></span>{{/each}}</div>
+            {{#each savingsAccountsMix}}<div class="finance-cu-key-row"><span class="finance-cu-key-name"><span class="finance-cu-dot" style="background-color: {{color}}"></span>{{accountName}}</span><strong>${{amountLabel}}</strong><span class="finance-cu-key-pct">{{percent}}%</span></div>{{/each}}
+          {{else}}<div class="finance-cu-empty">Add a savings account with a positive balance to see its distribution.</div>{{/if}}{{else}}<div class="finance-cu-empty">Savings details are unavailable.</div>{{/if}}
+        </div></div>
+        <div class="col-lg-5"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Income Sources by Frequency</h2></div>
+          {{#if incomesAvailable}}{{#if hasIncomeFrequencies}}
+            {{#each incomeFrequencies}}<div class="finance-cu-bar-item"><div class="d-flex justify-content-between gap-2 mb-2"><span>{{type}}</span><strong>{{count}} source(s)</strong></div><div class="finance-cu-track"><div class="finance-cu-bar" style="width: {{countWidth}}%; background: #CFB87C"></div></div></div>{{/each}}
+          {{else}}<div class="finance-cu-empty">Add an income source to see its frequency.</div>{{/if}}{{else}}<div class="finance-cu-empty">Income information is unavailable.</div>{{/if}}
+          <p class="finance-cu-note mt-3 mb-0">Bars count income sources, not dollars. Hourly, weekly, biweekly, and monthly amounts are not summed into a misleading monthly total.</p>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="finance-accounts" role="tabpanel" aria-labelledby="finance-accounts-tab" tabindex="0">
+      <div class="row g-3 mb-4">
+        <div class="col-lg-6"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Savings Accounts</h2><button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addSavingsModal">+ Add account</button></div>
+          {{#if savingsAvailable}}{{#if hasSavingsAccounts}}
+            {{#each savingsAccounts}}<button class="finance-cu-account-row" type="button" data-bs-toggle="modal" data-bs-target="#editSavingsModal" data-id="{{savingsid}}" data-name="{{accountname}}" data-amount="{{amount}}"><span><strong>{{accountname}}</strong><small>Click to edit</small></span><strong>${{amountLabel}}</strong></button>{{/each}}
+          {{else}}<div class="finance-cu-empty">No savings accounts yet. Use Add account to create your first one.</div>{{/if}}{{else}}<div class="finance-cu-empty">Accounts could not be loaded.</div>{{/if}}
+          <div class="finance-cu-total"><span>Total Savings</span><strong>{{#if savingsAvailable}}${{savingsLabel}}{{else}}Unavailable{{/if}}</strong></div>
+        </div></div>
+        <div class="col-lg-6"><div class="finance-cu-panel h-100">
+          <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Income Sources</h2><button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addIncomeModal">+ Add income</button></div>
+          {{#if incomesAvailable}}{{#if hasIncomeSources}}
+            {{#each incomes}}<button class="finance-cu-account-row" type="button" data-bs-toggle="modal" data-bs-target="#editIncomeModal" data-id="{{incomeid}}" data-name="{{incomename}}" data-type="{{incometype}}" data-amount="{{amount}}"><span><strong>{{incomename}}</strong><small>{{incometype}}</small></span><strong>${{amountLabel}}</strong></button>{{/each}}
+          {{else}}<div class="finance-cu-empty">No income sources yet. Add one to get started.</div>{{/if}}{{else}}<div class="finance-cu-empty">Income sources could not be loaded.</div>{{/if}}
+          <p class="finance-cu-note mb-0 mt-3">Income amounts are shown in their original frequency rather than combined into a single total.</p>
+        </div></div>
       </div>
     </section>
   </div>
- 
-  {{! ===== LEFT HALF: Income ===== }}
-  <div class="col-12 col-md-3">
-    <section class="my-4">
-      <h2 class="h4 border-bottom pb-2 mb-3">Income</h2>
- 
-      <div class="row g-2">
-        {{#each incomes}}
-          <div class="col-12 col-xl-6">
-            <div
-              class="card h-100"
-              role="button"
-              style="cursor: pointer;"
-              data-bs-toggle="modal"
-              data-bs-target="#editIncomeModal"
-              data-id="{{incomeid}}"
-              data-name="{{incomename}}"
-              data-type="{{incometype}}"
-              data-amount="{{amount}}"
-            >
-              <div class="card-body p-2">
-                <h6 class="card-title mb-1">{{incomename}}</h6>
-                <p class="card-text small text-muted mb-0">{{incometype}}</p>
-                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
-              </div>
-            </div>
-          </div>
-        {{else}}
-          <p class="text-muted small">No income sources yet.</p>
-        {{/each}}
-      </div>
- 
-      {{! Add Income button, styled as an empty card }}
-      <div class="row g-2 mt-1">
-        <div class="col-6 col-xl-4">
-          <button
-            type="button"
-            class="card w-100 bg-transparent text-muted"
-            style="border-style: dashed;"
-            data-bs-toggle="modal"
-            data-bs-target="#addIncomeModal"
-            aria-label="Add income"
-          >
-            <div class="card-body p-2 d-flex align-items-center justify-content-center">
-              <span class="fs-2 lh-1">+</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </section>
-  </div>
- 
-</div>
- 
+</section>
+
 {{! ===== Add Savings Modal ===== }}
 <div
   class="modal fade"
@@ -132,7 +156,7 @@
             aria-label="Close"
           ></button>
         </div>
- 
+
         <div class="modal-body">
           <div class="mb-3">
             <label for="savingsName" class="form-label">Account Name</label>
@@ -146,7 +170,7 @@
               required
             >
           </div>
- 
+
           <div class="mb-3">
             <label for="savingsAmount" class="form-label">Amount Saved</label>
             <div class="input-group">
@@ -164,7 +188,7 @@
             </div>
           </div>
         </div>
- 
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Cancel
@@ -175,7 +199,7 @@
     </div>
   </div>
 </div>
- 
+
 {{! ===== Edit Savings Modal ===== }}
 <div
   class="modal fade"
@@ -188,7 +212,7 @@
     <div class="modal-content">
       <form id="editSavingsForm" action="/savings/update" method="POST">
         <input type="hidden" id="editSavingsId" name="savingsId">
- 
+
         <div class="modal-header">
           <h5 class="modal-title" id="editSavingsModalLabel">Edit Savings Account</h5>
           <button
@@ -198,7 +222,7 @@
             aria-label="Close"
           ></button>
         </div>
- 
+
         <div class="modal-body">
           <div class="mb-3">
             <label for="editSavingsName" class="form-label">Account Name</label>
@@ -211,7 +235,7 @@
               required
             >
           </div>
- 
+
           <div class="mb-3">
             <label for="editSavingsAmount" class="form-label">Amount Saved</label>
             <div class="input-group">
@@ -228,7 +252,7 @@
             </div>
           </div>
         </div>
- 
+
         <div class="modal-footer">
           <button
             type="submit"
@@ -248,7 +272,7 @@
     </div>
   </div>
 </div>
- 
+
 {{! ===== Add Income Modal ===== }}
 <div
   class="modal fade"
@@ -269,7 +293,7 @@
             aria-label="Close"
           ></button>
         </div>
- 
+
         <div class="modal-body">
           <div class="mb-3">
             <label for="incomeName" class="form-label">Income Name</label>
@@ -283,7 +307,7 @@
               required
             >
           </div>
- 
+
           <div class="mb-3">
             <label for="incomeType" class="form-label">Income Type</label>
             <select class="form-select" id="incomeType" name="incomeType" required>
@@ -293,7 +317,7 @@
               <option value="Monthly" selected>Monthly</option>
             </select>
           </div>
- 
+
           <div class="mb-3">
             <label for="incomeAmount" class="form-label">Amount</label>
             <div class="input-group">
@@ -311,7 +335,7 @@
             </div>
           </div>
         </div>
- 
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Cancel
@@ -322,7 +346,7 @@
     </div>
   </div>
 </div>
- 
+
 {{! ===== Edit Income Modal ===== }}
 <div
   class="modal fade"
@@ -335,7 +359,7 @@
     <div class="modal-content">
       <form id="editIncomeForm" action="/income/update" method="POST">
         <input type="hidden" id="editIncomeId" name="incomeId">
- 
+
         <div class="modal-header">
           <h5 class="modal-title" id="editIncomeModalLabel">Edit Income</h5>
           <button
@@ -345,7 +369,7 @@
             aria-label="Close"
           ></button>
         </div>
- 
+
         <div class="modal-body">
           <div class="mb-3">
             <label for="editIncomeName" class="form-label">Income Name</label>
@@ -358,7 +382,7 @@
               required
             >
           </div>
- 
+
           <div class="mb-3">
             <label for="editIncomeType" class="form-label">Income Type</label>
             <select class="form-select" id="editIncomeType" name="incomeType" required>
@@ -368,7 +392,7 @@
               <option value="Monthly">Monthly</option>
             </select>
           </div>
- 
+
           <div class="mb-3">
             <label for="editIncomeAmount" class="form-label">Amount</label>
             <div class="input-group">
@@ -385,7 +409,7 @@
             </div>
           </div>
         </div>
- 
+
         <div class="modal-footer">
           <button
             type="submit"
@@ -405,7 +429,7 @@
     </div>
   </div>
 </div>
- 
+
 <script>
   // Fill the edit modals with the values from the card that was clicked
   document
@@ -417,7 +441,7 @@
       document.getElementById('editIncomeType').value = card.dataset.type;
       document.getElementById('editIncomeAmount').value = card.dataset.amount;
     });
- 
+
   document
     .getElementById('editSavingsModal')
     .addEventListener('show.bs.modal', function (event) {
@@ -427,4 +451,3 @@
       document.getElementById('editSavingsAmount').value = card.dataset.amount;
     });
 </script>
- 

@@ -15,6 +15,7 @@ const axios = require('axios');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const validation = require('./validation');
+const { buildFinancialsSummary, money: financialsMoney } = require('./financialsSummary');
 
 // *****************************************************
 // Section 2 : Connect to DB
@@ -202,50 +203,73 @@ app.get('/forgot-password', (req, res) => {
 
 
 // Financials
+// FINANCIALS_CU_COMBINED_V1 — combined Financials and Analysis, same route.
+// Preserve the existing savings/income POST endpoints below this handler.
 app.get('/financials', auth, async (req, res) => {
-  try {
-    const username = req.session.user.username;
- 
-    const savingsAccounts = await db.any(
-      `SELECT savingsID, accountName, amount
-       FROM userSavings
-       WHERE username = $1
-       ORDER BY savingsID`,
-      [username]
-    );
- 
-    const incomes = await db.any(
-      `SELECT incomeID, incomeName, incomeType, amount
-       FROM userIncome
-       WHERE username = $1
-       ORDER BY incomeID`,
-      [username]
-    );
- 
-    // DECIMAL columns come back from pg as strings, so convert before adding
-    const totalSavings = savingsAccounts.reduce(
-      (total, account) => total + Number(account.amount),
-      0
-    );
- 
-    res.render('pages/financials', {
-      savings: totalSavings.toFixed(2),
-      savingsAccounts,
-      incomes,
-    });
-  } catch (err) {
-    console.log('ERROR:', err.message || err);
-    res.render('pages/financials', {
-      savings: '0.00',
-      savingsAccounts: [],
-      incomes: [],
-      message: 'Could not load financial data.',
-      error: true,
-    });
+  const username = getUsername(req);
+  const unavailable = [];
+
+  async function fetchRows(section, sql) {
+    try {
+      return await db.any(sql, [username]);
+    } catch (error) {
+      unavailable.push(section);
+      console.error(`Financials ${section} query failed:`, error.message || error);
+      return [];
+    }
   }
+
+  // These are the team's current tables/columns, not the old one-row savings table.
+  const [savingsRows, incomeRows, expenseRows] = await Promise.all([
+    fetchRows('savings',
+      `SELECT savingsID, accountName, amount FROM userSavings
+       WHERE username = $1 ORDER BY savingsID`),
+    fetchRows('income',
+      `SELECT incomeID, incomeName, incomeType, amount FROM userIncome
+       WHERE username = $1 ORDER BY incomeID`),
+    fetchRows('expenses',
+      `SELECT expense_id, expense_name, amount, category FROM expenses
+       WHERE username = $1 ORDER BY expense_id DESC`),
+  ]);
+
+  const summary = buildFinancialsSummary({
+    savingsAccounts: savingsRows,
+    incomes: incomeRows,
+    expenses: expenseRows,
+  });
+  const savingsAvailable = !unavailable.includes('savings');
+  const incomesAvailable = !unavailable.includes('income');
+  const expensesAvailable = !unavailable.includes('expenses');
+
+  const savingsAccounts = savingsRows.map(account => ({
+    savingsid: account.savingsid,
+    accountname: account.accountname,
+    amount: account.amount,
+    amountLabel: financialsMoney(account.amount),
+  }));
+  const incomes = incomeRows.map(source => ({
+    incomeid: source.incomeid,
+    incomename: source.incomename,
+    incometype: source.incometype,
+    amount: source.amount,
+    amountLabel: financialsMoney(source.amount),
+  }));
+
+  res.render('pages/financials', {
+    ...summary,
+    savingsAccounts,
+    incomes,
+    hasSavingsAccounts: savingsAccounts.length > 0,
+    hasIncomeSources: incomes.length > 0,
+    savingsAvailable,
+    incomesAvailable,
+    expensesAvailable,
+    dataUnavailable: unavailable.length > 0,
+    warnings: unavailable.join(', '),
+  });
 });
- 
- 
+
+
 // ----- Add Savings Account -----
 app.post('/savings', auth, async (req, res) => {
   const { accountName, amount } = req.body;
