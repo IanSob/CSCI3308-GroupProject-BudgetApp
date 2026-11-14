@@ -7,6 +7,7 @@ const app = express();
 const handlebars = require('express-handlebars');
 const Handlebars = require('handlebars');
 const path = require('path');
+const {getHomeOverview} = require('./homeOverview');
 const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -119,8 +120,32 @@ app.use((req, res, next) => {
 });
 
 // Home page
-app.get('/', (req, res) => {
-  res.render('pages/home.hbs');
+app.get('/', async (req, res) => {
+  const sessionUser = req.session && req.session.user;
+  if (!sessionUser) {
+    return res.render('pages/home.hbs', { homeLoggedIn: false });
+  }
+
+  const username = getUsername(req);
+  if (typeof username !== 'string' || !username) {
+    return res.render('pages/home.hbs', { homeLoggedIn: false });
+  }
+
+  try {
+    const home = await getHomeOverview(db, username);
+    return res.render('pages/home.hbs', {
+      ...home,
+      homeLoggedIn: true,
+      homeName: (typeof sessionUser === 'object' && sessionUser.name) || username,
+    });
+  } catch (error) {
+    console.error('Home overview error:', error.message || error);
+    return res.render('pages/home.hbs', {
+      homeLoggedIn: true,
+      homeName: username,
+      partialData: true,
+    });
+  }
 });
 
 // Expenses Display
