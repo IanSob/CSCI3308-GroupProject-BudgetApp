@@ -428,9 +428,9 @@ app.post('/register', no_auth, async (req, res) =>
 {
   const pass = req.body.password;
   const passConfirm = req.body.passwordConfirm;
-  const usr = String(req.body.username || '').trim();
-  const usrName = String(req.body.name || '').trim();
-  const email = String(req.body.email || '').trim();
+  const usr = req.body.username;
+  const usrName = req.body.name;
+  const email = req.body.email;
 
   const errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
   // We have all the required data
