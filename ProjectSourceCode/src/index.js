@@ -24,6 +24,9 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
+  helpers: {
+    eq: (a, b) => a === b,
+  },
 });
 
 const dbConfig = {
