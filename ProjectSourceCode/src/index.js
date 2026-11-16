@@ -238,15 +238,24 @@ const processRecurringExpenses = async (username) => {
   });
 };
 
-// Shared display information for Handlebars. Route authorization stays unchanged.
+// Shared navigation information for Handlebars
 app.use((req, res, next) => {
+
+  // Check if the user is logged in
   res.locals.isAuthenticated = Boolean(req.session.user);
+
+  // Main navigation pages
   res.locals.activeHome = req.path === '/';
   res.locals.activeDashboard = req.path === '/dashboard';
   res.locals.activeFinancials = req.path === '/financials';
   res.locals.activeExpenses = req.path === '/expenses';
+  res.locals.activeAnalysis = req.path === '/analysis';
+
+  // Account navigation
+  res.locals.activeSettings = req.path === '/settings';
   res.locals.activeLogin = req.path === '/login';
   res.locals.activeRegister = req.path === '/register';
+
   next();
 });
 
