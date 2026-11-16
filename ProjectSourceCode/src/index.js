@@ -238,15 +238,24 @@ const processRecurringExpenses = async (username) => {
   });
 };
 
-// Shared display information for Handlebars. Route authorization stays unchanged.
+// Shared navigation information for Handlebars
 app.use((req, res, next) => {
+
+  // Check if the user is logged in
   res.locals.isAuthenticated = Boolean(req.session.user);
+
+  // Main navigation pages
   res.locals.activeHome = req.path === '/';
   res.locals.activeDashboard = req.path === '/dashboard';
   res.locals.activeFinancials = req.path === '/financials';
   res.locals.activeExpenses = req.path === '/expenses';
+  res.locals.activeAnalysis = req.path === '/analysis';
+
+  // Account navigation
+  res.locals.activeSettings = req.path === '/settings';
   res.locals.activeLogin = req.path === '/login';
   res.locals.activeRegister = req.path === '/register';
+
   next();
 });
 
@@ -1011,23 +1020,34 @@ app.post('/login', no_auth, async (req, res) => {
     }
 });
 
+
 // Dashboard Route
 app.get('/dashboard', auth, async (req, res) => {
   try {
-    // Identify the logged-in user
-    const username =
-      typeof req.session.user === 'string'
-        ? req.session.user
-        : req.session.user.username;
 
-    // Get the user's savings
+    // 1. Identify the logged-in user
+
+    const username = getUsername(req);
+
+
+    // 2. Process recurring expenses
+
+    await processRecurringExpenses(username);
+
+
+    // 3. Get total savings
+
     const savingsRow = await db.one(
-      'SELECT COALESCE(SUM(amount), 0) AS total FROM userSavings WHERE username = $1',
+      `SELECT COALESCE(SUM(amount), 0) AS total
+       FROM userSavings
+       WHERE username = $1`,
       [username]
-   );
+    );
 
 
-    // Get the user's income sources
+    // 4. Get income sources
+    
+
     const incomes = await db.any(
       `SELECT incomeName, incomeType, amount
        FROM userIncome
@@ -1036,61 +1056,139 @@ app.get('/dashboard', auth, async (req, res) => {
       [username]
     );
 
-    // Get the user's expenses
+
+    // 5. Get recorded expenses
     const expenses = await db.any(
-      `SELECT expense_id, expense_name, amount, category
+      `SELECT expense_id,
+              expense_name,
+              amount,
+              category
        FROM expenses
        WHERE username = $1
        ORDER BY expense_id DESC`,
       [username]
     );
 
-    // Calculate total expenses
+    // 6. Get upcoming recurring expenses
+
+    const recurringExpenses = await db.any(
+      `SELECT recurring_expense_id,
+              expense_name,
+              amount,
+              category,
+              frequency,
+              TO_CHAR(
+                next_due_date,
+                'YYYY-MM-DD'
+              ) AS next_due_date
+       FROM recurring_expenses
+       WHERE username = $1
+         AND active = TRUE
+         AND next_due_date > CURRENT_DATE
+       ORDER BY next_due_date ASC,
+                recurring_expense_id ASC
+       LIMIT 5`,
+      [username]
+    );
+
+
+    
+    // 7. Format financial data
+
+    const formatMoney = (amount) => {
+      return Number(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    };
+
+
+    // Calculate total recorded expenses
     const totalExpenses = expenses.reduce(
       (total, expense) => total + Number(expense.amount),
       0
     );
 
-    // Format income sources for display
+
+    // Format income sources
     const formattedIncomes = incomes.map(income => ({
       name: income.incomename,
       type: income.incometype,
-      amount: Number(income.amount).toFixed(2)
+      amount: formatMoney(income.amount)
     }));
 
-    // Format the five most recent expense records
+
+    // Format five most recently recorded expenses
     const recentExpenses = expenses.slice(0, 5).map(expense => ({
       description: expense.expense_name,
       category: expense.category,
-      amount: Number(expense.amount).toFixed(2)
+      amount: formatMoney(expense.amount)
     }));
 
-    // Render the dashboard
+
+    // Format recurring expenses
+    const formattedRecurringExpenses = recurringExpenses.map(expense => ({
+      name: expense.expense_name,
+      category: expense.category,
+      amount: formatMoney(expense.amount),
+      frequency: expense.frequency,
+      nextDueDate: expense.next_due_date
+    }));
+
+
+    // =====================================
+    // 8. Render Dashboard
+    // =====================================
+
     res.render('pages/dashboard', {
+
       username: username,
-      savingsAmount: Number(savingsRow.total).toFixed(2),
-      totalExpenses: totalExpenses.toFixed(2),
+
+      // Financial summary
+      savingsAmount: formatMoney(savingsRow.total),
+      totalExpenses: formatMoney(totalExpenses),
       incomeCount: formattedIncomes.length,
+
+      // Income sources
       incomes: formattedIncomes,
+
+      // Recent expenses
       recentExpenses: recentExpenses,
-      hasExpenses: recentExpenses.length > 0
+      hasExpenses: recentExpenses.length > 0,
+
+      // Recurring expenses
+      upcomingRecurringExpenses: formattedRecurringExpenses,
+      hasUpcomingExpenses: formattedRecurringExpenses.length > 0
+
     });
 
   } catch (error) {
+
     console.error('Dashboard error:', error.message);
 
     res.status(500).render('pages/dashboard', {
+
       errorMessage: 'Unable to load your financial data.',
+
       username: '',
+
       savingsAmount: '0.00',
       totalExpenses: '0.00',
       incomeCount: 0,
+
       incomes: [],
+
       recentExpenses: [],
-      hasExpenses: false
+      hasExpenses: false,
+
+      upcomingRecurringExpenses: [],
+      hasUpcomingExpenses: false
+
     });
+
   }
 });
+
 
 
 // Log out the current user without affecting registration or login handling.
