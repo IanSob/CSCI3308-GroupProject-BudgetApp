@@ -20,6 +20,20 @@ function validatePassword(pass)
     return "Invalid password."
 }
 
+// For username validation
+usernameRegEx = /^[A-Za-z0-9\._]{3,50}$/
+
+// Username must only contain capital or lowercase, periods, underscores, or numbers
+function validateUsername(username)
+{
+    if(usernameRegEx.test(username))
+    {
+        return "";
+    }
+
+    return "Invalid username."
+}
+
 // Make sure all items are in the 
 function validateRegistration (pass, passConfirm, usr, usrName, email)
 {
@@ -37,6 +51,11 @@ function validateRegistration (pass, passConfirm, usr, usrName, email)
     if((validPass = validatePassword(pass)))
     {
         return validPass;
+    }
+
+    if(validUser = validateUsername(usr))
+    {
+        return validUser;
     }
 
     return "";

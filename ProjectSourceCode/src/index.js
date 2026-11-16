@@ -438,31 +438,43 @@ app.post('/register', no_auth, async (req, res) =>
   {
     try
     {
-      // The hashed password
-      const hash = await bcrypt.hash(pass, 10);
+      // The username already exists
+      if((await db.any("SELECT username FROM users WHERE username = $1", [usr])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Username already exists."
+        });
+      }
+      else
+      {
+        // The hashed password
+        const hash = await bcrypt.hash(pass, 10);
 
-      await db.none(
-        `INSERT INTO users (username, email, name, password)
-         VALUES ($1, $2, $3, $4)`,
-        [usr, email, usrName, hash]
-      );
+        await db.none(
+          `INSERT INTO users (username, email, name, password)
+          VALUES ($1, $2, $3, $4)`,
+          [usr, email, usrName, hash]
+        );
 
-      // Log the new user in with the same session shape as /login
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).send('Unable to start your session.');
-        }
-
-        req.session.user = { username: usr };
-
-        req.session.save((err) => {
+        // Log the new user in with the same session shape as /login
+        req.session.regenerate((err) => {
           if (err) {
-            return res.status(500).send('Unable to save session.');
+            return res.status(500).send('Unable to start your session.');
           }
 
-          res.redirect('/dashboard');
+          req.session.user = { username: usr };
+
+          req.session.save((err) => {
+            if (err) {
+              return res.status(500).send('Unable to save session.');
+            }
+
+            res.redirect('/dashboard');
+          });
         });
-      });
+      }
     }
     catch (err)
     {
@@ -478,10 +490,10 @@ app.post('/register', no_auth, async (req, res) =>
   else
   {
     res.status(400).render('pages/register.hbs', 
-      {
-        error: true,
-        message: errMessage
-      });
+    {
+      error: true,
+      message: errMessage
+    });
   }
 });
 

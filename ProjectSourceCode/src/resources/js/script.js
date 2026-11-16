@@ -59,3 +59,29 @@ function validPassword()
         passElement.setCustomValidity("Password contains an invalid character.");
     }
 }
+
+// RegEx for valid username
+const userRegEx = /^[A-Za-z0-9\._]{3,50}$/
+
+function validUsername()
+{
+    usr = document.getElementById('username');
+    usrValue = usr.value;
+
+    if(usrValue.length < 3)
+    {
+        usr.setCustomValidity("Username is too short.");
+    }
+    else if(usrValue.length > 50)
+    {
+        usr.setCustomValidity("Username is too long.");
+    }
+    else if(userRegEx.test(usrValue))
+    {
+        usr.setCustomValidity("");
+    }
+    else
+    {
+        usr.setCustomValidity("Username contains an invalid character.");
+    }
+}
