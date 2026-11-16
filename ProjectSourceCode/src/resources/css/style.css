@@ -87,3 +87,220 @@
 @media(max-width:1199.98px){.app-navbar .navbar-collapse{padding-top:12px}.app-navbar .app-nav-button{width:100%;text-align:center;margin-top:6px}}
 @media(max-width:767.98px){.cu-home-v2 .cu-home-hero{padding:1.6rem}.cu-home-v2 .cu-home-title{font-size:2.3rem}}
 /* === End CU navbar + Home refinements v2 === */
+
+
+/* === Dashboard Styling === */
+
+
+.ffs-dashboard {
+  color: #212529;
+}
+
+
+/* Dashboard Header */
+
+.ffs-dashboard .dashboard-heading {
+  font-size: 2rem;
+  font-weight: 750;
+  letter-spacing: -0.6px;
+}
+
+.ffs-dashboard .dashboard-eyebrow {
+  color: #94763b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.ffs-dashboard .dashboard-action-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+
+/* Dashboard Cards */
+
+.ffs-dashboard .card {
+  border: 1px solid #e5e3dd;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.ffs-dashboard .card-body {
+  padding: 1.4rem;
+}
+
+.ffs-dashboard .summary-card {
+  border-top: 3px solid #cfb87c;
+  transition: transform 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.ffs-dashboard .summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08) !important;
+}
+
+
+/* Summary Icons */
+
+.ffs-dashboard .summary-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background-color: #f5efdf;
+  color: #94763b;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.ffs-dashboard .income-icon {
+  background-color: #e8f5ed;
+  color: #198754;
+}
+
+.ffs-dashboard .expense-icon {
+  background-color: #fcebec;
+  color: #dc3545;
+}
+
+
+/* Summary Values */
+
+.ffs-dashboard .summary-value {
+  font-weight: 750;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+
+.ffs-dashboard .section-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+
+/* Dashboard Buttons */
+
+.ffs-dashboard .btn {
+  border-radius: 8px;
+}
+
+.ffs-dashboard .quick-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  padding: 11px 14px;
+  border-color: #ddd9cf;
+}
+
+.ffs-dashboard .quick-action:hover {
+  background-color: #f5efdf;
+  border-color: #cfb87c;
+  color: #212529;
+}
+
+
+/* Dashboard Links */
+
+.ffs-dashboard .dashboard-link {
+  color: #94763b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.ffs-dashboard .dashboard-link:hover {
+  color: #6d5528;
+  text-decoration: underline;
+}
+
+
+/* Tables */
+
+.ffs-dashboard .table th {
+  color: #666666;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 12px 8px;
+}
+
+.ffs-dashboard .table td {
+  vertical-align: middle;
+  padding: 14px 8px;
+  font-size: 0.9rem;
+}
+
+.ffs-dashboard .table td:last-child {
+  white-space: nowrap;
+}
+
+
+/* Expense Category */
+
+.ffs-dashboard .expense-category {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: #f3f1eb;
+  color: #555555;
+  font-size: 0.8rem;
+}
+
+
+/* Empty State */
+
+.ffs-dashboard .dashboard-empty-state {
+  text-align: center;
+  padding: 22px 10px;
+}
+
+
+/* Mobile Dashboard */
+
+@media (max-width: 767.98px) {
+
+  .ffs-dashboard .dashboard-heading {
+    font-size: 1.65rem;
+  }
+
+  .ffs-dashboard .card-body {
+    padding: 1.1rem;
+  }
+
+  .ffs-dashboard .dashboard-action-btn {
+    width: 100%;
+  }
+
+  .ffs-dashboard .summary-card:hover {
+    transform: none;
+  }
+
+  .ffs-dashboard .section-heading {
+    font-size: 1rem;
+  }
+
+}
+
+
+/* Small Phones */
+
+@media (max-width: 575.98px) {
+
+  .ffs-dashboard {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .ffs-dashboard .table td {
+    font-size: 0.82rem;
+  }
+
+}
+
