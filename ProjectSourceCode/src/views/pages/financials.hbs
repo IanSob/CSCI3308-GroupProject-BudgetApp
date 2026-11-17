@@ -117,14 +117,14 @@
 
     <section class="tab-pane fade" id="finance-accounts" role="tabpanel" aria-labelledby="finance-accounts-tab" tabindex="0">
       <div class="row g-3 mb-4">
-        <div class="col-lg-6"><div class="finance-cu-panel h-100">
+        <div class="col-lg-6"><div class="finance-cu-panel h-100 dashboard-anchor" id="savings-accounts">
           <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Savings Accounts</h2><button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addSavingsModal">+ Add account</button></div>
           {{#if savingsAvailable}}{{#if hasSavingsAccounts}}
             {{#each savingsAccounts}}<button class="finance-cu-account-row" type="button" data-bs-toggle="modal" data-bs-target="#editSavingsModal" data-id="{{savingsid}}" data-name="{{accountname}}" data-amount="{{amount}}"><span><strong>{{accountname}}</strong><small>Click to edit</small></span><strong>${{amountLabel}}</strong></button>{{/each}}
           {{else}}<div class="finance-cu-empty">No savings accounts yet. Use Add account to create your first one.</div>{{/if}}{{else}}<div class="finance-cu-empty">Accounts could not be loaded.</div>{{/if}}
           <div class="finance-cu-total"><span>Total Savings</span><strong>{{#if savingsAvailable}}${{savingsLabel}}{{else}}Unavailable{{/if}}</strong></div>
         </div></div>
-        <div class="col-lg-6"><div class="finance-cu-panel h-100">
+        <div class="col-lg-6"><div class="finance-cu-panel h-100 dashboard-anchor" id="income-sources">
           <div class="finance-cu-panel-head"><h2 class="h5 mb-0">Income Sources</h2><button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addIncomeModal">+ Add income</button></div>
           {{#if incomesAvailable}}{{#if hasIncomeSources}}
             {{#each incomes}}<button class="finance-cu-account-row" type="button" data-bs-toggle="modal" data-bs-target="#editIncomeModal" data-id="{{incomeid}}" data-name="{{incomename}}" data-type="{{incometype}}" data-amount="{{amount}}"><span><strong>{{incomename}}</strong><small>{{incometype}}</small></span><strong>${{amountLabel}}</strong></button>{{/each}}
@@ -431,6 +431,26 @@
 </div>
 
 <script>
+  function openLinkedAccountSection() {
+    const hash = window.location.hash;
+    if (hash !== '#savings-accounts' && hash !== '#income-sources') {
+      return;
+    }
+
+    const section = document.getElementById(hash.slice(1));
+    const tab = document.getElementById('finance-accounts-tab');
+    if (tab.classList.contains('active')) {
+      section.scrollIntoView();
+      return;
+    }
+
+    tab.addEventListener('shown.bs.tab', () => section.scrollIntoView(), { once: true });
+    tab.click();
+  }
+
+  window.addEventListener('load', openLinkedAccountSection);
+  window.addEventListener('hashchange', openLinkedAccountSection);
+
   // Fill the edit modals with the values from the card that was clicked
   document
     .getElementById('editIncomeModal')
@@ -451,3 +471,6 @@
       document.getElementById('editSavingsAmount').value = card.dataset.amount;
     });
 </script>
+
+
+
