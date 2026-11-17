@@ -24,6 +24,9 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
+  helpers: {
+    eq: (a, b) => a === b,
+  },
 });
 
 const dbConfig = {
@@ -106,15 +109,153 @@ const getUsername = (req) =>
     ? req.session.user
     : req.session.user.username;
 
-// Shared display information for Handlebars. Route authorization stays unchanged.
+// Add the next scheduled date without overflowing month-end dates.
+const getNextDueDate = (dateString, frequency, anchorDay = Number(dateString.slice(8, 10))) => {
+  const [year, month, day] = dateString.split('-').map(Number);
+
+  let nextYear = year;
+  let nextMonth = month - 1;
+  let nextDay = anchorDay;
+
+  if (frequency === 'weekly') {
+    const date = new Date(Date.UTC(year, month - 1, day + 7));
+    return date.toISOString().slice(0, 10);
+  }
+
+  if (frequency === 'biweekly') {
+    const date = new Date(Date.UTC(year, month - 1, day + 14));
+    return date.toISOString().slice(0, 10);
+  }
+
+  if (frequency === 'monthly') {
+    nextMonth += 1;
+    nextYear += Math.floor(nextMonth / 12);
+    nextMonth %= 12;
+  } else if (frequency === 'yearly') {
+    nextYear += 1;
+  } else {
+    throw new Error('Invalid recurring expense frequency');
+  }
+
+  // Clamp dates such as January 31 to the last day of February.
+  const lastDay = new Date(
+    Date.UTC(nextYear, nextMonth + 1, 0)
+  ).getUTCDate();
+
+  nextDay = Math.min(nextDay, lastDay);
+
+  return [
+    nextYear,
+    String(nextMonth + 1).padStart(2, '0'),
+    String(nextDay).padStart(2, '0')
+  ].join('-');
+};
+
+// Generate all overdue payments for one user's recurring expenses.
+const processRecurringExpenses = async (username) => {
+  await db.tx(async (t) => {
+    // Use the database's date to avoid timezone inconsistencies.
+    const { today } = await t.one(
+      `SELECT CURRENT_DATE::TEXT AS today`
+    );
+
+    // Lock schedules while processing them to prevent concurrent duplicates.
+    const recurringExpenses = await t.any(
+      `SELECT recurring_expense_id,
+              expense_name,
+              amount,
+              category,
+              frequency,
+              TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+              TO_CHAR(next_due_date, 'YYYY-MM-DD') AS next_due_date
+       FROM recurring_expenses
+       WHERE username = $1
+         AND active = TRUE
+         AND next_due_date <= CURRENT_DATE
+       ORDER BY recurring_expense_id
+       FOR UPDATE`,
+      [username]
+    );
+
+    for (const recurring of recurringExpenses) {
+      let dueDate = recurring.next_due_date;
+
+      while (dueDate <= today) {
+        // Check whether this scheduled payment was already recorded.
+        const existingPayment = await t.oneOrNone(
+          `SELECT payment_id
+           FROM recurring_expense_payments
+           WHERE recurring_expense_id = $1
+             AND due_date = $2`,
+          [recurring.recurring_expense_id, dueDate]
+        );
+
+        if (!existingPayment) {
+          // Create the regular expense.
+          const expense = await t.one(
+            `INSERT INTO expenses
+               (username, expense_name, amount, category)
+             VALUES ($1, $2, $3, $4)
+             RETURNING expense_id`,
+            [
+              username,
+              recurring.expense_name,
+              recurring.amount,
+              recurring.category
+            ]
+          );
+
+          // Record which scheduled payment generated that expense.
+          await t.none(
+            `INSERT INTO recurring_expense_payments
+               (recurring_expense_id, due_date, expense_id)
+             VALUES ($1, $2, $3)`,
+            [
+              recurring.recurring_expense_id,
+              dueDate,
+              expense.expense_id
+            ]
+          );
+        }
+
+        // Calculate the next scheduled payment date.
+        dueDate = getNextDueDate(
+              dueDate,
+              recurring.frequency,
+              Number(recurring.start_date.slice(8, 10))
+        );
+      }
+
+      // Save the next upcoming date.
+      await t.none(
+        `UPDATE recurring_expenses
+         SET next_due_date = $1
+         WHERE recurring_expense_id = $2
+           AND username = $3`,
+        [dueDate, recurring.recurring_expense_id, username]
+      );
+    }
+  });
+};
+
+// Shared navigation information for Handlebars
 app.use((req, res, next) => {
+
+  // Check if the user is logged in
   res.locals.isAuthenticated = Boolean(req.session.user);
+
+  // Main navigation pages
   res.locals.activeHome = req.path === '/';
   res.locals.activeDashboard = req.path === '/dashboard';
   res.locals.activeFinancials = req.path === '/financials';
   res.locals.activeExpenses = req.path === '/expenses';
+  res.locals.activeAnalysis = req.path === '/analysis';
+
+  // Account navigation
+  res.locals.activeSettings = req.path === '/settings';
   res.locals.activeLogin = req.path === '/login';
   res.locals.activeRegister = req.path === '/register';
+
   next();
 });
 
@@ -128,6 +269,8 @@ app.get('/expenses', auth, async (req, res) => {
   try {
     const username = getUsername(req);
 
+    await processRecurringExpenses(username);
+
     const expenses = await db.any(
       `SELECT expense_id, expense_name, amount, category
        FROM expenses
@@ -136,6 +279,20 @@ app.get('/expenses', auth, async (req, res) => {
       [username]
     );
 
+    const recurringExpenses = await db.any(
+      `SELECT recurring_expense_id,
+              expense_name,
+              amount,
+              category,
+              frequency,
+              TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+              TO_CHAR(next_due_date, 'YYYY-MM-DD') AS next_due_date,
+              active
+      FROM recurring_expenses
+      WHERE username = $1
+      ORDER BY active DESC, next_due_date ASC`,
+      [username]
+    );
     const totalExpenses = expenses.reduce(
       (total, expense) => total + Number(expense.amount),
       0
@@ -144,10 +301,21 @@ app.get('/expenses', auth, async (req, res) => {
   res.render('pages/expenses.hbs', {
     expenses: expenses,
     hasExpenses: expenses.length > 0,
+    recurringExpenses: recurringExpenses,
+    hasRecurringExpenses: recurringExpenses.length > 0,
     totalExpenses: totalExpenses.toFixed(2),
     successMessage: req.query.success
       ? 'Expense added successfully!'
       : null,
+    recurringSuccessMessage: req.query.recurringSuccess
+      ? 'Recurring expense added successfully!'
+      : req.query.recurringUpdated
+        ? 'Recurring expense updated successfully!'
+        : req.query.recurringStopped
+          ? 'Recurring expense stopped successfully!'
+          : req.query.recurringDeleted
+            ? 'Recurring expense deleted successfully!'
+            : null,
   });
 
   } catch (err) {
@@ -156,6 +324,8 @@ app.get('/expenses', auth, async (req, res) => {
     res.status(500).render('pages/expenses.hbs', {
       expenses: [],
       hasExpenses: false,
+      recurringExpenses: [],
+      hasRecurringExpenses: false,
       totalExpenses: '0.00',
       errorMessage: 'Unable to load expenses right now.',
     });
@@ -195,6 +365,221 @@ app.post('/expenses', auth, async (req, res) => {
   }
 });
 
+
+// Create a recurring expense schedule
+app.post('/recurring-expenses', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+
+    const {
+      expense_name,
+      amount,
+      category,
+      frequency,
+      start_date
+    } = req.body;
+
+    const validCategories = [
+      'Food',
+      'Transportation',
+      'Entertainment',
+      'Shopping',
+      'Other'
+    ];
+
+    const validFrequencies = [
+      'weekly',
+      'biweekly',
+      'monthly',
+      'yearly'
+    ];
+
+    // Validate the submitted information.
+    const dateIsValid =
+      /^\d{4}-\d{2}-\d{2}$/.test(start_date || '') &&
+      !Number.isNaN(Date.parse(`${start_date}T00:00:00Z`)) &&
+      new Date(`${start_date}T00:00:00Z`)
+        .toISOString().slice(0, 10) === start_date;
+
+    if (
+      !expense_name ||
+      !expense_name.trim() ||
+      expense_name.trim().length > 100 ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0 ||
+      Number(amount) > 99999999.99 ||
+      !validCategories.includes(category) ||
+      !validFrequencies.includes(frequency) ||
+      !dateIsValid
+    ) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    // Save the recurring schedule.
+    await db.none(
+      `INSERT INTO recurring_expenses
+        (username, expense_name, amount, category,
+         frequency, start_date, next_due_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $6)`,
+      [
+        username,
+        expense_name.trim(),
+        Number(amount),
+        category,
+        frequency,
+        start_date
+      ]
+    );
+
+    res.redirect('/expenses?recurringSuccess=1');
+  } catch (err) {
+    console.log('Recurring expense error:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
+
+// Edit an existing recurring expense schedule
+app.post('/recurring-expenses/:id/edit', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+    const recurringExpenseId = Number(req.params.id);
+
+    const {
+      expense_name,
+      amount,
+      category,
+      frequency,
+      start_date
+    } = req.body;
+
+    const validCategories = [
+      'Food',
+      'Transportation',
+      'Entertainment',
+      'Shopping',
+      'Other'
+    ];
+
+    const validFrequencies = [
+      'weekly',
+      'biweekly',
+      'monthly',
+      'yearly'
+    ];
+
+    const dateIsValid =
+      /^\d{4}-\d{2}-\d{2}$/.test(start_date || '') &&
+      !Number.isNaN(Date.parse(`${start_date}T00:00:00Z`)) &&
+      new Date(`${start_date}T00:00:00Z`)
+        .toISOString().slice(0, 10) === start_date;
+
+    if (
+      !Number.isInteger(recurringExpenseId) ||
+      recurringExpenseId <= 0 ||
+      !expense_name ||
+      !expense_name.trim() ||
+      expense_name.trim().length > 100 ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0 ||
+      Number(amount) > 99999999.99 ||
+      !validCategories.includes(category) ||
+      !validFrequencies.includes(frequency) ||
+      !dateIsValid
+    ) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    // Update only a schedule belonging to the logged-in user.
+    const result = await db.result(
+      `UPDATE recurring_expenses
+       SET expense_name = $1,
+           amount = $2,
+           category = $3,
+           frequency = $4,
+           start_date = $5,
+           next_due_date = $5
+       WHERE recurring_expense_id = $6
+         AND username = $7`,
+      [
+        expense_name.trim(),
+        Number(amount),
+        category,
+        frequency,
+        start_date,
+        recurringExpenseId,
+        username
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).redirect('/expenses');
+    }
+
+    res.redirect('/expenses?recurringUpdated=1');
+  } catch (err) {
+    console.log('Edit recurring expense error:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
+// Stop an existing recurring expense schedule
+app.post('/recurring-expenses/:id/stop', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+    const recurringExpenseId = Number(req.params.id);
+
+    if (!Number.isInteger(recurringExpenseId) || recurringExpenseId <= 0) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    const result = await db.result(
+      `UPDATE recurring_expenses
+       SET active = FALSE
+       WHERE recurring_expense_id = $1
+         AND username = $2`,
+      [recurringExpenseId, username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).redirect('/expenses');
+    }
+
+    res.redirect('/expenses?recurringStopped=1');
+  } catch (err) {
+    console.log('Stop recurring expense error:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
+// Delete a recurring expense schedule
+app.post('/recurring-expenses/:id/delete', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+    const recurringExpenseId = Number(req.params.id);
+
+    if (!Number.isInteger(recurringExpenseId) || recurringExpenseId <= 0) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    const result = await db.result(
+      `DELETE FROM recurring_expenses
+       WHERE recurring_expense_id = $1
+         AND username = $2`,
+      [recurringExpenseId, username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).redirect('/expenses');
+    }
+
+    res.redirect('/expenses?recurringDeleted=1');
+  } catch (err) {
+    console.log('Delete recurring expense error:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
 // Forgot Password Route, Saanvi
 app.get('/forgot-password', (req, res) => {
   res.render('pages/forgot-password.hbs');
@@ -205,68 +590,116 @@ app.get('/forgot-password', (req, res) => {
 app.get('/financials', auth, async (req, res) => {
   try {
     const username = req.session.user.username;
-
-
-    const savingsRow = await db.oneOrNone(
-      'SELECT savings FROM userSavings WHERE username = $1',
+ 
+    const savingsAccounts = await db.any(
+      `SELECT savingsID, accountName, amount
+       FROM userSavings
+       WHERE username = $1
+       ORDER BY savingsID`,
       [username]
     );
-
+ 
     const incomes = await db.any(
       `SELECT incomeID, incomeName, incomeType, amount
-      FROM userIncome
-      WHERE username = $1
-      ORDER BY incomeID`,
+       FROM userIncome
+       WHERE username = $1
+       ORDER BY incomeID`,
       [username]
     );
-
+ 
+    // DECIMAL columns come back from pg as strings, so convert before adding
+    const totalSavings = savingsAccounts.reduce(
+      (total, account) => total + Number(account.amount),
+      0
+    );
+ 
     res.render('pages/financials', {
-      savings: savingsRow ? savingsRow.savings : 0,
+      savings: totalSavings.toFixed(2),
+      savingsAccounts,
       incomes,
     });
   } catch (err) {
     console.log('ERROR:', err.message || err);
     res.render('pages/financials', {
-      savings: null,
+      savings: '0.00',
+      savingsAccounts: [],
       incomes: [],
       message: 'Could not load financial data.',
       error: true,
     });
   }
 });
-
-// Update Savings
+ 
+ 
+// ----- Add Savings Account -----
 app.post('/savings', auth, async (req, res) => {
-  const amount = parseFloat(req.body.amount);
-  const change = req.body.action === 'remove' ? -amount : amount;
-
-  if (!(amount > 0)) {
+  const { accountName, amount } = req.body;
+  const parsedAmount = parseFloat(amount);
+ 
+  if (!accountName || !accountName.trim() || accountName.trim().length > 50 || !(parsedAmount >= 0)) {
     return res.redirect('/financials');
   }
-
-  const username = req.session.user.username;
-
+ 
   try {
-    // Make sure the user has a savings row (does nothing if they already do)
     await db.none(
-      `INSERT INTO userSavings (username, savings)
-       VALUES ($1, 0)
-       ON CONFLICT (username) DO NOTHING`,
-      [username]
-    );
-
-    await db.none(
-      `UPDATE userSavings
-       SET savings = COALESCE(savings, 0) + $1
-       WHERE username = $2 AND COALESCE(savings, 0) + $1 >= 0`,
-      [change, username]
+      `INSERT INTO userSavings (username, accountName, amount)
+       VALUES ($1, $2, $3)`,
+      [req.session.user.username, accountName.trim(), parsedAmount]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
+ 
+ 
+// ----- Edit Savings Account -----
+app.post('/savings/update', auth, async (req, res) => {
+  const { savingsId, accountName, amount } = req.body;
+  const id = parseInt(savingsId, 10);
+  const parsedAmount = parseFloat(amount);
+ 
+  if (!Number.isInteger(id) || !accountName || !accountName.trim() || accountName.trim().length > 50 || !(parsedAmount >= 0)) {
+    return res.redirect('/financials');
+  }
+ 
+  try {
+    // "AND username = $4" makes sure users can only edit their own accounts
+    await db.none(
+      `UPDATE userSavings
+       SET accountName = $1, amount = $2
+       WHERE savingsID = $3 AND username = $4`,
+      [accountName.trim(), parsedAmount, id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+ 
+  res.redirect('/financials');
+});
+ 
+ 
+// ----- Remove Savings Account -----
+app.post('/savings/delete', auth, async (req, res) => {
+  const id = parseInt(req.body.savingsId, 10);
+ 
+  if (!Number.isInteger(id)) {
+    return res.redirect('/financials');
+  }
+ 
+  try {
+    await db.none(
+      'DELETE FROM userSavings WHERE savingsID = $1 AND username = $2',
+      [id, req.session.user.username]
+    );
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
+  }
+ 
+  res.redirect('/financials');
+});
+
 
 // Add Income
 app.post('/income', auth, async (req, res) => {
@@ -480,7 +913,7 @@ app.post('/register', no_auth, async (req, res) =>
               return res.status(500).send('Unable to save session.');
             }
 
-            res.redirect('/dashboard');
+            res.redirect(303, '/dashboard');
           });
         });
       }
@@ -608,22 +1041,34 @@ app.post('/login', no_auth, async (req, res) => {
     }
 });
 
+
 // Dashboard Route
 app.get('/dashboard', auth, async (req, res) => {
   try {
-    // Identify the logged-in user
-    const username =
-      typeof req.session.user === 'string'
-        ? req.session.user
-        : req.session.user.username;
 
-    // Get the user's savings
-    const savingsRow = await db.oneOrNone(
-      'SELECT savings FROM userSavings WHERE username = $1',
+    // 1. Identify the logged-in user
+
+    const username = getUsername(req);
+
+
+    // 2. Process recurring expenses
+
+    await processRecurringExpenses(username);
+
+
+    // 3. Get total savings
+
+    const savingsRow = await db.one(
+      `SELECT COALESCE(SUM(amount), 0) AS total
+       FROM userSavings
+       WHERE username = $1`,
       [username]
     );
 
-    // Get the user's income sources
+
+    // 4. Get income sources
+    
+
     const incomes = await db.any(
       `SELECT incomeName, incomeType, amount
        FROM userIncome
@@ -632,61 +1077,139 @@ app.get('/dashboard', auth, async (req, res) => {
       [username]
     );
 
-    // Get the user's expenses
+
+    // 5. Get recorded expenses
     const expenses = await db.any(
-      `SELECT expense_id, expense_name, amount, category
+      `SELECT expense_id,
+              expense_name,
+              amount,
+              category
        FROM expenses
        WHERE username = $1
        ORDER BY expense_id DESC`,
       [username]
     );
 
-    // Calculate total expenses
+    // 6. Get upcoming recurring expenses
+
+    const recurringExpenses = await db.any(
+      `SELECT recurring_expense_id,
+              expense_name,
+              amount,
+              category,
+              frequency,
+              TO_CHAR(
+                next_due_date,
+                'YYYY-MM-DD'
+              ) AS next_due_date
+       FROM recurring_expenses
+       WHERE username = $1
+         AND active = TRUE
+         AND next_due_date > CURRENT_DATE
+       ORDER BY next_due_date ASC,
+                recurring_expense_id ASC
+       LIMIT 5`,
+      [username]
+    );
+
+
+    
+    // 7. Format financial data
+
+    const formatMoney = (amount) => {
+      return Number(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    };
+
+
+    // Calculate total recorded expenses
     const totalExpenses = expenses.reduce(
       (total, expense) => total + Number(expense.amount),
       0
     );
 
-    // Format income sources for display
+
+    // Format income sources
     const formattedIncomes = incomes.map(income => ({
       name: income.incomename,
       type: income.incometype,
-      amount: Number(income.amount).toFixed(2)
+      amount: formatMoney(income.amount)
     }));
 
-    // Format the five most recent expense records
+
+    // Format five most recently recorded expenses
     const recentExpenses = expenses.slice(0, 5).map(expense => ({
       description: expense.expense_name,
       category: expense.category,
-      amount: Number(expense.amount).toFixed(2)
+      amount: formatMoney(expense.amount)
     }));
 
-    // Render the dashboard
+
+    // Format recurring expenses
+    const formattedRecurringExpenses = recurringExpenses.map(expense => ({
+      name: expense.expense_name,
+      category: expense.category,
+      amount: formatMoney(expense.amount),
+      frequency: expense.frequency,
+      nextDueDate: expense.next_due_date
+    }));
+
+
+    // =====================================
+    // 8. Render Dashboard
+    // =====================================
+
     res.render('pages/dashboard', {
+
       username: username,
-      savingsAmount: Number(savingsRow?.savings ?? 0).toFixed(2),
-      totalExpenses: totalExpenses.toFixed(2),
+
+      // Financial summary
+      savingsAmount: formatMoney(savingsRow.total),
+      totalExpenses: formatMoney(totalExpenses),
       incomeCount: formattedIncomes.length,
+
+      // Income sources
       incomes: formattedIncomes,
+
+      // Recent expenses
       recentExpenses: recentExpenses,
-      hasExpenses: recentExpenses.length > 0
+      hasExpenses: recentExpenses.length > 0,
+
+      // Recurring expenses
+      upcomingRecurringExpenses: formattedRecurringExpenses,
+      hasUpcomingExpenses: formattedRecurringExpenses.length > 0
+
     });
 
   } catch (error) {
+
     console.error('Dashboard error:', error.message);
 
     res.status(500).render('pages/dashboard', {
+
       errorMessage: 'Unable to load your financial data.',
+
       username: '',
+
       savingsAmount: '0.00',
       totalExpenses: '0.00',
       incomeCount: 0,
+
       incomes: [],
+
       recentExpenses: [],
-      hasExpenses: false
+      hasExpenses: false,
+
+      upcomingRecurringExpenses: [],
+      hasUpcomingExpenses: false
+
     });
+
   }
 });
+
 
 
 // Log out the current user without affecting registration or login handling.
