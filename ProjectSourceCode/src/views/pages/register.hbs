@@ -5,21 +5,21 @@
         <h1 class="h3 mb-3">Register With Flash Financial Savings</h1>
         {{> message}}
         <form action="/register" method="post">
-        <div class="form-group mb-3">
+        <div title="Name must be 50 characters or fewer and not contain special characters or numbers." class="form-group mb-3">
             <label for="name" class="form-label">Name</label>
-            <input class="form-control" name="name" id="name" placeholder="Enter your name" required/>
+            <input class="form-control" name="name" id="name" placeholder="Enter your name" oninput="validName()" required/>
         </div>
         <div class="form-group mb-3">
             <label for="email" class="form-label">Email</label>
             <input type="email" class="form-control" name="email" id="email" aria-describedby="emailHelp" placeholder="Enter a valid email" required/>
         </div>
-        <div class="form-group mb-3">
+        <div title = "Username must be between 3-50 characters long and only contain upper or lowercase letters, periods, uderscores, or numbers." class="form-group mb-3">
             <label for="username" class="form-label">Username</label>
-            <input class="form-control" name="username" id="username" placeholder="Enter a username" required/>
+            <input class="form-control" name="username" id="username" placeholder="Enter a username" oninput="validUsername()" required/>
         </div>
-        <div class="form-group mb-3">
+        <div title="Password must have 8 characters with an uppercase letter, lowercase letter, and a special character or number." class="form-group mb-3">
             <label for="password" class="form-label">Password</label>
-            <input class="form-control" type="password" name="password" id="password" placeholder="Enter a password" required/>
+            <input class="form-control" type="password" name="password" id="password" placeholder="Enter a password" oninput="validPassword()" required/>
         </div>
         <div class="form-group mb-3">
             <label for="passwordConfirm" class="form-label">Confirm Password</label>

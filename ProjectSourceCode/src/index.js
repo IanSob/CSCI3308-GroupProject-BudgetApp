@@ -861,41 +861,62 @@ app.post('/register', no_auth, async (req, res) =>
 {
   const pass = req.body.password;
   const passConfirm = req.body.passwordConfirm;
-  const usr = String(req.body.username || '').trim();
-  const usrName = String(req.body.name || '').trim();
-  const email = String(req.body.email || '').trim();
+  const usr = req.body.username;
+  const usrName = req.body.name;
+  const email = req.body.email;
 
   const errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
-  // We have all the required data
+  // We have all the required data and it is formatted properly
   if(!errMessage)
   {
     try
     {
-      // The hashed password
-      const hash = await bcrypt.hash(pass, 10);
+      // The username already exists
+      if((await db.any("SELECT username FROM users WHERE username = $1", [usr])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Username already exists."
+        });
+      }
+      // The email is already taken
+      else if((await db.any("SELECT email FROM users WHERE email = $1", [email])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Email is taken."
+        });
+      }
+      else
+      {
+        // The hashed password
+        const hash = await bcrypt.hash(pass, 10);
 
-      await db.none(
-        `INSERT INTO users (username, email, name, password)
-         VALUES ($1, $2, $3, $4)`,
-        [usr, email, usrName, hash]
-      );
+        await db.none(
+          `INSERT INTO users (username, email, name, password)
+          VALUES ($1, $2, $3, $4)`,
+          [usr, email, usrName, hash]
+        );
 
-      // Log the new user in with the same session shape as /login
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).send('Unable to start your session.');
-        }
-
-        req.session.user = { username: usr };
-
-        req.session.save((err) => {
+        // Log the new user in with the same session shape as /login
+        req.session.regenerate((err) => {
           if (err) {
-            return res.status(500).send('Unable to save session.');
+            return res.status(500).send('Unable to start your session.');
           }
 
-          res.redirect(303, '/dashboard');
+          req.session.user = { username: usr };
+
+          req.session.save((err) => {
+            if (err) {
+              return res.status(500).send('Unable to save session.');
+            }
+
+            res.redirect(303, '/dashboard');
+          });
         });
-      });
+      }
     }
     catch (err)
     {
@@ -911,10 +932,10 @@ app.post('/register', no_auth, async (req, res) =>
   else
   {
     res.status(400).render('pages/register.hbs', 
-      {
-        error: true,
-        message: errMessage
-      });
+    {
+      error: true,
+      message: errMessage
+    });
   }
 });
 
