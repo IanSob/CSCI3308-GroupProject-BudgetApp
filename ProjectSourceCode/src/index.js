@@ -589,7 +589,7 @@ app.get('/forgot-password', (req, res) => {
 // Financials
 app.get('/financials', auth, async (req, res) => {
   try {
-    const username = req.session.user.username;
+    const username = getUsername(req);
  
     const savingsAccounts = await db.any(
       `SELECT savingsID, accountName, amount
@@ -644,7 +644,7 @@ app.post('/savings', auth, async (req, res) => {
     await db.none(
       `INSERT INTO userSavings (username, accountName, amount)
        VALUES ($1, $2, $3)`,
-      [req.session.user.username, accountName.trim(), parsedAmount]
+      [getUsername(req), accountName.trim(), parsedAmount]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -670,7 +670,7 @@ app.post('/savings/update', auth, async (req, res) => {
       `UPDATE userSavings
        SET accountName = $1, amount = $2
        WHERE savingsID = $3 AND username = $4`,
-      [accountName.trim(), parsedAmount, id, req.session.user.username]
+      [accountName.trim(), parsedAmount, id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -691,7 +691,7 @@ app.post('/savings/delete', auth, async (req, res) => {
   try {
     await db.none(
       'DELETE FROM userSavings WHERE savingsID = $1 AND username = $2',
-      [id, req.session.user.username]
+      [id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -715,7 +715,7 @@ app.post('/income', auth, async (req, res) => {
     await db.none(
       `INSERT INTO userIncome (username, incomeName, incomeType, amount)
        VALUES ($1, $2, $3, $4)`,
-      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount]
+      [getUsername(req), incomeName.trim(), incomeType, parsedAmount]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -740,7 +740,7 @@ app.post('/income/update', auth, async (req, res) => {
       `UPDATE userIncome
        SET incomeName = $1, incomeType = $2, amount = $3
        WHERE incomeID = $4 AND username = $5`,
-      [incomeName.trim(), incomeType, parsedAmount, id, req.session.user.username]
+      [incomeName.trim(), incomeType, parsedAmount, id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -760,7 +760,7 @@ app.post('/income/delete', auth, async (req, res) => {
   try {
     await db.none(
       'DELETE FROM userIncome WHERE incomeID = $1 AND username = $2',
-      [id, req.session.user.username]
+      [id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);

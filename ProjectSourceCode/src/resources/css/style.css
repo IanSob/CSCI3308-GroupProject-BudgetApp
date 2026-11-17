@@ -92,6 +92,8 @@
 /* === Dashboard Styling === */
 
 
+.dashboard-anchor { scroll-margin-top: 1.5rem; }
+
 .ffs-dashboard {
   color: #212529;
 }

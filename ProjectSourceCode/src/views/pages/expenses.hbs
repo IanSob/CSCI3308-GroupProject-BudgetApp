@@ -24,7 +24,7 @@
     {{/if}}
 
     <!-- Add Expense Form -->
-    <div class="card mb-4">
+    <div class="card mb-4 dashboard-anchor" id="add-expense">
         <div class="card-body">
             <h5 class="card-title">Add an Expense</h5>
 
@@ -88,7 +88,7 @@
     {{/if}}
 
     <!-- Add Recurring Expense Form -->
-    <div class="card mb-4">
+    <div class="card mb-4 dashboard-anchor" id="add-recurring-expense">
         <div class="card-body">
             <h5 class="card-title">Add a Recurring Expense</h5>
             <p class="text-muted">
@@ -190,7 +190,7 @@
     </div>
 
     <!-- Recurring Expense Schedules -->
-    <div class="mb-4">
+    <div class="mb-4 dashboard-anchor" id="recurring-expenses">
         <h3 class="mb-3">My Recurring Expenses</h3>
 
         {{#if hasRecurringExpenses}}
