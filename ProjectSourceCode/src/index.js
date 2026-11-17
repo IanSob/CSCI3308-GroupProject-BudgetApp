@@ -7,6 +7,7 @@ const app = express();
 const handlebars = require('express-handlebars');
 const Handlebars = require('handlebars');
 const path = require('path');
+const { readFileSync } = require('node:fs');
 const {getHomeOverview} = require('./homeOverview');
 const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
@@ -16,7 +17,7 @@ const axios = require('axios');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const validation = require('./validation');
-const { buildFinancialsSummary, money: financialsMoney } = require('./financialsSummary');
+const { buildFinancialsSummary } = require('./financialsSummary');
 
 // *****************************************************
 // Section 2 : Connect to DB
@@ -40,15 +41,6 @@ const dbConfig = {
 };
 
 const db = pgp(dbConfig);
-
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful');
-    obj.done();
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
 
 // *****************************************************
 // Section 3 : App Settings
@@ -612,10 +604,43 @@ app.get('/forgot-password', (req, res) => {
 });
 
 
-// Financials
-// FINANCIALS_CU_COMBINED_V1 — combined Financials and Analysis, same route.
-// Preserve the existing savings/income POST endpoints below this handler.
+// Income & Savings
 app.get('/financials', auth, async (req, res) => {
+  const username = getUsername(req);
+  try {
+    const [savingsAccounts, incomes] = await Promise.all([
+      db.any(
+        `SELECT savingsID, accountName, amount FROM userSavings
+         WHERE username = $1 ORDER BY savingsID`,
+        [username]
+      ),
+      db.any(
+        `SELECT incomeID, incomeName, incomeType, amount FROM userIncome
+         WHERE username = $1 ORDER BY incomeID`,
+        [username]
+      ),
+    ]);
+    const totalSavings = savingsAccounts.reduce((total, account) => total + Number(account.amount), 0);
+    res.render('pages/financials', {
+      savings: totalSavings.toFixed(2),
+      savingsAccounts,
+      incomes,
+    });
+  } catch (error) {
+    console.error('Income and savings error:', error.message);
+    res.render('pages/financials', {
+      savings: '0.00',
+      savingsAccounts: [],
+      incomes: [],
+      message: 'Could not load financial data.',
+      error: true,
+    });
+  }
+});
+
+
+// Analysis
+app.get('/analysis', auth, async (req, res) => {
   const username = getUsername(req);
   const unavailable = [];
 
@@ -624,12 +649,11 @@ app.get('/financials', auth, async (req, res) => {
       return await db.any(sql, [username]);
     } catch (error) {
       unavailable.push(section);
-      console.error(`Financials ${section} query failed:`, error.message || error);
+      console.error(`Analysis ${section} query failed:`, error.message || error);
       return [];
     }
   }
 
-  // These are the team's current tables/columns, not the old one-row savings table.
   const [savingsRows, incomeRows, expenseRows] = await Promise.all([
     fetchRows('savings',
       `SELECT savingsID, accountName, amount FROM userSavings
@@ -651,26 +675,8 @@ app.get('/financials', auth, async (req, res) => {
   const incomesAvailable = !unavailable.includes('income');
   const expensesAvailable = !unavailable.includes('expenses');
 
-  const savingsAccounts = savingsRows.map(account => ({
-    savingsid: account.savingsid,
-    accountname: account.accountname,
-    amount: account.amount,
-    amountLabel: financialsMoney(account.amount),
-  }));
-  const incomes = incomeRows.map(source => ({
-    incomeid: source.incomeid,
-    incomename: source.incomename,
-    incometype: source.incometype,
-    amount: source.amount,
-    amountLabel: financialsMoney(source.amount),
-  }));
-
-  res.render('pages/financials', {
+  res.render('pages/analysis', {
     ...summary,
-    savingsAccounts,
-    incomes,
-    hasSavingsAccounts: savingsAccounts.length > 0,
-    hasIncomeSources: incomes.length > 0,
     savingsAvailable,
     incomesAvailable,
     expensesAvailable,
@@ -1274,5 +1280,17 @@ app.post('/logout', auth, (req, res) => {
 // Section 5 : Start Server
 // *****************************************************
 
-app.listen(3000);
-console.log('Server is listening on port 3000');
+async function startServer() {
+  const schema = readFileSync(path.join(__dirname, 'init_data', 'create.sql'), 'utf8');
+  await db.tx(async transaction => {
+    await transaction.one('SELECT pg_advisory_xact_lock(3308, 1)');
+    await transaction.none(schema);
+  });
+  app.listen(3000, () => console.log('Server is listening on port 3000'));
+}
+
+startServer().catch(error => {
+  console.error('Database initialization failed:', error.message);
+  pgp.end();
+  process.exitCode = 1;
+});

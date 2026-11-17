@@ -81,11 +81,15 @@
             </a>
           </li>
 
-          <!-- Analysis is planned but does not have a route yet. -->
+          <!-- Analysis -->
           <li class="nav-item">
-            <span class="nav-link app-nav-soon" aria-disabled="true">
-              Analysis <span class="app-soon-label">Soon</span>
-            </span>
+            <a
+              class="nav-link {{#if activeAnalysis}}active fw-semibold{{/if}}"
+              href="/analysis"
+              {{#if activeAnalysis}}aria-current="page"{{/if}}
+            >
+              Analysis
+            </a>
           </li>
 
         </ul>

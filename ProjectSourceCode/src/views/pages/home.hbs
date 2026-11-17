@@ -7,7 +7,7 @@
         <h1 id="ffs-home-headline">Your money,<br><em>made simple.</em></h1>
         <p class="ffs-home-intro">A clear place to check your savings, keep up with expenses, and stay in control of your finances.</p>
         <div class="ffs-home-buttons">
-          <a class="ffs-home-button ffs-home-button-gold" href="/financials">View Financials <span aria-hidden="true">→</span></a>
+          <a class="ffs-home-button ffs-home-button-gold" href="/analysis">View Analysis <span aria-hidden="true">→</span></a>
           <a class="ffs-home-button ffs-home-button-outline" href="/expenses">Manage Expenses</a>
         </div>
       {{else}}
@@ -50,10 +50,10 @@
       <p>Everything you need, just one click away.</p>
     </div>
     <div class="ffs-home-link-grid">
-      <a class="ffs-home-link-card" href="/financials"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-8M22 19v-13"/></svg></span><span class="ffs-home-link-copy"><strong>Financials</strong><small>Review your finances and spending insights</small></span><span class="ffs-home-link-arrow">↗</span></a>
+      <a class="ffs-home-link-card" href="/analysis"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-8M22 19v-13"/></svg></span><span class="ffs-home-link-copy"><strong>Analysis</strong><small>Review your finances and spending insights</small></span><span class="ffs-home-link-arrow">↗</span></a>
       <a class="ffs-home-link-card" href="/expenses"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h7M7 17h4"/></svg></span><span class="ffs-home-link-copy"><strong>Expenses</strong><small>Add expenses and see where money goes</small></span><span class="ffs-home-link-arrow">↗</span></a>
-      <a class="ffs-home-link-card" href="/financials"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 8.5c-1-.9-5-1.2-6 .6-1.7 3 7 1.9 6 5.4-.7 2.4-4.9 2.6-7 .9M12 5.5v13"/></svg></span><span class="ffs-home-link-copy"><strong>Income</strong><small>Keep track of your income sources</small></span><span class="ffs-home-link-arrow">↗</span></a>
-      <a class="ffs-home-link-card" href="/financials"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18v10H3zM3 14h18M7 10V7c0-2 2-3 5-3s5 1 5 3v3"/></svg></span><span class="ffs-home-link-copy"><strong>Savings</strong><small>Manage your savings accounts</small></span><span class="ffs-home-link-arrow">↗</span></a>
+      <a class="ffs-home-link-card" href="/financials#income-sources"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 8.5c-1-.9-5-1.2-6 .6-1.7 3 7 1.9 6 5.4-.7 2.4-4.9 2.6-7 .9M12 5.5v13"/></svg></span><span class="ffs-home-link-copy"><strong>Income</strong><small>Keep track of your income sources</small></span><span class="ffs-home-link-arrow">↗</span></a>
+      <a class="ffs-home-link-card" href="/financials#savings-accounts"><span class="ffs-home-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18v10H3zM3 14h18M7 10V7c0-2 2-3 5-3s5 1 5 3v3"/></svg></span><span class="ffs-home-link-copy"><strong>Savings</strong><small>Manage your savings accounts</small></span><span class="ffs-home-link-arrow">↗</span></a>
     </div>
   </section>
 
@@ -79,7 +79,7 @@
 
   {{#if homeLoggedIn}}
   <section class="ffs-home-section" aria-labelledby="ffs-activity-title">
-    <div class="ffs-home-section-heading"><div><span class="ffs-home-eyebrow">STAY INFORMED</span><h2 id="ffs-activity-title">Your activity</h2></div><a class="ffs-home-section-link" href="/financials">Explore Financials →</a></div>
+    <div class="ffs-home-section-heading"><div><span class="ffs-home-eyebrow">STAY INFORMED</span><h2 id="ffs-activity-title">Your activity</h2></div><a class="ffs-home-section-link" href="/analysis">Explore Analysis →</a></div>
     <div class="ffs-home-activity-grid">
       <div class="ffs-home-panel"><h3>Top spending categories</h3><p class="ffs-home-panel-sub">Based on your recorded expenses</p>
         {{#if expensesAvailable}}
