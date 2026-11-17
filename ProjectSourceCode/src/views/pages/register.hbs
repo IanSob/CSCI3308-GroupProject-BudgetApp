@@ -5,9 +5,9 @@
         <h1 class="h3 mb-3">Register With Flash Financial Savings</h1>
         {{> message}}
         <form action="/register" method="post">
-        <div class="form-group mb-3">
+        <div title="Name must be 50 characters or fewer and not contain special characters or numbers." class="form-group mb-3">
             <label for="name" class="form-label">Name</label>
-            <input class="form-control" name="name" id="name" placeholder="Enter your name" required/>
+            <input class="form-control" name="name" id="name" placeholder="Enter your name" oninput="validName()" required/>
         </div>
         <div class="form-group mb-3">
             <label for="email" class="form-label">Email</label>

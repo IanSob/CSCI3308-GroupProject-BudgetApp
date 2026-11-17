@@ -62,7 +62,7 @@ function validPassword()
 
 // RegEx for valid username
 const userRegEx = /^[A-Za-z0-9\._]{3,50}$/
-
+// Check if the username is properly formatted
 function validUsername()
 {
     usr = document.getElementById('username');
@@ -83,5 +83,26 @@ function validUsername()
     else
     {
         usr.setCustomValidity("Username contains an invalid character.");
+    }
+}
+// Regex for validating name
+const nameRegEx = /^[^!"#$%&'()*+,\\\-.\/:;<=>?@[\]^_`{|}~0-9]*$/;
+// Make sure the name does not have special characters or numbers
+function validName()
+{
+    usrName = document.getElementById("name");
+    usrNameValue = usrName.value;
+
+    if(usrNameValue.length > 50)
+    {
+        usrName.setCustomValidity("Name must be less than 50 characters.");
+    }
+    else if(nameRegEx.test(usrNameValue))
+    {
+        usrName.setCustomValidity("");
+    }
+    else
+    {
+        usrName.setCustomValidity("Name must not contain special characters of numbers.");
     }
 }

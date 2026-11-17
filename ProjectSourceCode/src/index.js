@@ -433,7 +433,7 @@ app.post('/register', no_auth, async (req, res) =>
   const email = req.body.email;
 
   const errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
-  // We have all the required data
+  // We have all the required data and it is formatted properly
   if(!errMessage)
   {
     try
@@ -445,6 +445,15 @@ app.post('/register', no_auth, async (req, res) =>
         {
           error: true,
           message: "Username already exists."
+        });
+      }
+      // The email is already taken
+      else if((await db.any("SELECT email FROM users WHERE email = $1", [email])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Email is taken."
         });
       }
       else
