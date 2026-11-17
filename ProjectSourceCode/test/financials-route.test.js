@@ -1,16 +1,16 @@
 'use strict';
-// In-memory route tests for the /financials GET handler, no database required.
+// In-memory route tests for the /analysis GET handler, no database required.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { buildFinancialsSummary, money } = require('../src/financialsSummary');
+const { buildFinancialsSummary } = require('../src/financialsSummary');
 
 const file = fs.readFileSync(path.join(__dirname, '../src/index.js'), 'utf8');
-const start = file.indexOf('// FINANCIALS_CU_COMBINED_V1');
+const start = file.indexOf("app.get('/analysis'");
 const end = file.indexOf('// ----- Add Savings Account -----', start);
-assert.ok(start >= 0 && end > start, 'combined Financials route must exist');
+assert.ok(start >= 0 && end > start, 'Analysis route must exist');
 const routeText = file.slice(start, end);
 
 function makeHandler(mockDB) {
@@ -20,14 +20,14 @@ function makeHandler(mockDB) {
   vm.runInNewContext(routeText, {
     app, auth: guard, getUsername: req => req.session.user.username,
     db: mockDB, console: {error() {}}, Promise,
-    buildFinancialsSummary, financialsMoney: money,
+    buildFinancialsSummary,
   });
-  assert.equal(path, '/financials');
+  assert.equal(path, '/analysis');
   assert.equal(middleware, guard);
   return handler;
 }
 
-test('financials endpoint remains protected and filters every table by session username', async () => {
+test('analysis endpoint remains protected and filters every table by session username', async () => {
   const log = [];
   const handle = makeHandler({
     async any(sql, values) {
@@ -42,11 +42,11 @@ test('financials endpoint remains protected and filters every table by session u
   let rendered;
   await handle({session: {user: {username: 'alice'}}}, {render(page, data) { rendered = {page, data}; }});
   assert.deepEqual(log, ['alice', 'alice', 'alice']);
-  assert.equal(rendered.page, 'pages/financials');
+  assert.equal(rendered.page, 'pages/analysis');
   assert.equal(rendered.data.savingsLabel, '250.00');
   assert.equal(rendered.data.expenseLabel, '25.50');
   assert.equal(rendered.data.incomeCount, 1);
-  assert.equal(rendered.data.savingsAccounts[0].accountname, 'Emergency Fund');
+  assert.equal(rendered.data.savingsAccountsMix[0].accountName, 'Emergency Fund');
   assert.equal(rendered.data.dataUnavailable, false);
 });
 
