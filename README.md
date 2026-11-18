@@ -2,7 +2,7 @@
 
 # Brief Application Description
 Our Budget App, Flash Financial Savings, is a web application that helps users manage their personal finances 
-by tracking income, savings, and expenses in one place.
+by tracking income, savings, and expenses all in one place.
 
 # Contributors
 - Saanvi Trivedi
