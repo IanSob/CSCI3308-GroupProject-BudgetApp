@@ -62,3 +62,4 @@ Creative functions for interpreting data
 11/17 Group Meeting Notes:
 - Starting the Analysis Page
 - Splitting the Presentation Up
+- Forgot Password implementation
