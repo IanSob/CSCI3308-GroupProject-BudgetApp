@@ -19,7 +19,7 @@ Everyone is now on the same page as to what needs to be pushed to GitHub. We wil
 
 ##### Brainstom format:
 - Nav Bar - the nav bar shouldn't be cluttered, should only show pages that one can access and adaptive to if you are logged in or not
-10/28 TA Meeting:
+### 10/28 TA Meeting:
   
 People make a budget app every semester.
 Think about user applications and interface because the most important aspect in bringing people back to use the app again.
@@ -30,21 +30,21 @@ Modals for how recurring expenditures happen
 Creative functions for interpreting data
 
 
-11/3 Group Meeting Notes:
+### 11/3 Group Meeting Notes:
 - fixed the part with the app so we can include style sheet and javascript.
 - Made a simple register page, the validation part isn't done yet.
 - Login page in process.
 - Need to update the release notes.
 - Need to merge the code we've been working on.
   
-11/4 TA Meeting notes:
+### 11/4 TA Meeting notes:
 - 3 commits a day
 - Make sure to do pull requests
     - Keeps the code consistent and correct
 - Continue to work on expenses especially
 - Assign different user stories to everyone
 
-11/10 group meeting notes:
+### 11/10 group meeting notes:
 - tests and registers being worked on
 - register page should look like the login page
 - inputting the md files
@@ -53,13 +53,22 @@ Creative functions for interpreting data
 - Not pulling or merging changes fully yet
 - MD file is currently a draft
 
-11/11 TA Meeting Notes:
+### 11/11 TA Meeting Notes:
 - Submit assignment in canvas
 - release notes, team notes
 - work day tomorrow, so we will start deployment next week
 - Hope to get financials working by next Thursday
 
-11/17 Group Meeting Notes:
+### 11/17 Group Meeting Notes:
 - Starting the Analysis Page
 - Splitting the Presentation Up
 - Forgot Password implementation
+
+### 11/18 TA Meeting Notes:
+- Dashboard/home page done
+- Work on profile page tonight
+- Exam tonight
+- Think about presentation
+- Navbar more consistent
+- Tomorrow will host site for lab
+- Donuts
