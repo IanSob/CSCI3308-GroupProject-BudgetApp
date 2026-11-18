@@ -453,3 +453,86 @@
 
 }
 
+/* Clickable account / income tiles */
+.ffs-dashboard .account-tile {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-left: 3px solid #cfb87c;
+  background-color: #fff;
+  transition: transform 0.2s ease,
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+}
+ 
+.ffs-dashboard .account-tile:hover,
+.ffs-dashboard .account-tile:focus-visible {
+  transform: translateY(-3px);
+  border-color: #cfb87c;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+ 
+.ffs-dashboard .account-tile:focus-visible {
+  outline: 3px solid #cfb87c;
+  outline-offset: 2px;
+}
+ 
+.ffs-dashboard .account-tile .card-body {
+  display: block;
+  padding: 1rem 1.1rem;
+}
+ 
+.ffs-dashboard .income-tile .card-body {
+  display: flex;
+}
+ 
+.ffs-dashboard .account-tile-name {
+  display: block;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+ 
+.ffs-dashboard .income-tile .account-tile-name {
+  margin-bottom: 0.35rem;
+}
+ 
+.ffs-dashboard .account-tile-amount {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.25rem;
+  font-weight: 750;
+  letter-spacing: -0.3px;
+  overflow-wrap: anywhere;
+}
+ 
+.ffs-dashboard .account-tile-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #8a8d90;
+}
+ 
+/* Modals: same look as dashboard buttons and inputs */
+.ffs-dashboard .modal-content {
+  border: 1px solid #e5e3dd;
+  border-radius: 12px;
+}
+ 
+.ffs-dashboard .modal-header,
+.ffs-dashboard .modal-footer {
+  border-color: #f0ede7;
+}
+ 
+.ffs-dashboard .modal .form-control:focus,
+.ffs-dashboard .modal .form-select:focus {
+  border-color: #cfb87c;
+  box-shadow: 0 0 0 0.2rem rgba(207, 184, 124, 0.3);
+}
+ 
+@media (max-width: 767.98px) {
+  .ffs-dashboard .account-tile:hover {
+    transform: none;
+  }
+}
+
