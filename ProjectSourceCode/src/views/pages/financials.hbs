@@ -1,415 +1,511 @@
-<h1>Savings and Accounts</h1>
-
-{{#if error}}
-  <div class="alert alert-danger" role="alert">{{message}}</div>
-{{/if}}
-
-{{! Total is now calculated from all savings accounts, so there is no edit button here }}
-<div class="card my-3">
-  <div class="card-body">
-    <h5 class="card-title">Total Savings</h5>
-    <p class="card-text mb-0">${{savings}}</p>
+<!-- Flash Financial Savings: Income & Savings -->
+ 
+<div class="container py-4 ffs-dashboard">
+ 
+  {{#if error}}
+    <div class="alert alert-danger" role="alert">
+      {{message}}
+    </div>
+  {{/if}}
+ 
+  <!-- ===================================
+       PAGE HEADER
+       =================================== -->
+ 
+  <div class="d-flex flex-wrap gap-3
+              justify-content-between
+              align-items-center mb-4">
+ 
+    <div>
+      <p class="dashboard-eyebrow mb-1">
+        YOUR ACCOUNTS
+      </p>
+ 
+      <h1 class="dashboard-heading mb-1">
+        Income &amp; Savings
+      </h1>
+ 
+      <p class="text-muted mb-0">
+        Track what you earn and what you have set aside.
+      </p>
+    </div>
+ 
+    <a href="/dashboard" class="btn btn-outline-dark dashboard-action-btn">
+      Back to Dashboard
+    </a>
   </div>
-</div>
-
-<div class="row">
-
-  {{! ===== RIGHT HALF: Savings/Accounts  ===== }}
-  <div class="col-12 col-md-7">
-    <section class="my-4 dashboard-anchor" id="savings-accounts">
-      <h2 class="h4 border-bottom pb-2 mb-3">Savings/Accounts</h2>
-
-      <div class="row g-2">
-        {{#each savingsAccounts}}
-          <div class="col-12 col-sm-6 col-lg-4">
-            <div
-              class="card h-100"
-              role="button"
-              style="cursor: pointer;"
+ 
+ 
+  <!-- ===================================
+       SUMMARY CARDS
+       =================================== -->
+ 
+  <div class="row g-3 mb-4">
+ 
+    <!-- Total Savings -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm summary-card savings-card">
+        <div class="card-body">
+          <div class="summary-icon mb-3">$</div>
+ 
+          <h5 class="card-title text-muted">Total Savings</h5>
+ 
+          <h2 class="summary-value mb-3">${{savings}}</h2>
+ 
+          <p class="small text-muted mb-0">
+            Combined balance of your savings accounts.
+          </p>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Savings Accounts -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm summary-card">
+        <div class="card-body">
+          <div class="summary-icon mb-3">#</div>
+ 
+          <h5 class="card-title text-muted">Savings Accounts</h5>
+ 
+          <h2 class="summary-value mb-3">{{savingsAccounts.length}}</h2>
+ 
+          <p class="small text-muted mb-0">
+            Places where your money is saved.
+          </p>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Income Sources -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm summary-card income-card">
+        <div class="card-body">
+          <div class="summary-icon income-icon mb-3">↑</div>
+ 
+          <h5 class="card-title text-muted">Income Sources</h5>
+ 
+          <h2 class="summary-value text-success mb-3">{{incomes.length}}</h2>
+ 
+          <p class="small text-muted mb-0">
+            Your recorded sources of income.
+          </p>
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+ 
+ 
+  <!-- ===================================
+       SAVINGS ACCOUNTS & INCOME SOURCES
+       =================================== -->
+ 
+  <div class="row g-3 mb-4">
+ 
+    <!-- Savings Accounts -->
+    <div class="col-12 col-lg-7 dashboard-anchor" id="savings-accounts">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+ 
+          <div class="d-flex flex-wrap gap-2
+                      justify-content-between
+                      align-items-center mb-3">
+ 
+            <h5 class="section-heading mb-0">Savings Accounts</h5>
+ 
+            <button
+              type="button"
+              class="btn btn-dark btn-sm"
               data-bs-toggle="modal"
-              data-bs-target="#editSavingsModal"
-              data-id="{{savingsid}}"
-              data-name="{{accountname}}"
-              data-amount="{{amount}}"
+              data-bs-target="#addSavingsModal"
             >
-              <div class="card-body p-2">
-                <h6 class="card-title mb-1">{{accountname}}</h6>
-                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
+              + Add Savings
+            </button>
+          </div>
+ 
+          <div class="row g-3">
+            {{#each savingsAccounts}}
+              <div class="col-12 col-sm-6">
+                <button
+                  type="button"
+                  class="card account-tile w-100 text-start"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editSavingsModal"
+                  data-id="{{savingsid}}"
+                  data-name="{{accountname}}"
+                  data-amount="{{amount}}"
+                >
+                  <span class="card-body">
+                    <span class="account-tile-name">{{accountname}}</span>
+                    <span class="account-tile-amount">${{amount}}</span>
+                    <span class="account-tile-hint">Click to edit</span>
+                  </span>
+                </button>
+              </div>
+            {{else}}
+              <div class="col-12">
+                <div class="dashboard-empty-state">
+                  <p class="text-muted mb-3">No savings accounts yet.</p>
+ 
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addSavingsModal"
+                  >
+                    + Add Your First Account
+                  </button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+ 
+        </div>
+      </div>
+    </div>
+ 
+ 
+    <!-- Income Sources -->
+    <div class="col-12 col-lg-5 dashboard-anchor" id="income-sources">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+ 
+          <div class="d-flex flex-wrap gap-2
+                      justify-content-between
+                      align-items-center mb-3">
+ 
+            <h5 class="section-heading mb-0">Income Sources</h5>
+ 
+            <button
+              type="button"
+              class="btn btn-dark btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#addIncomeModal"
+            >
+              + Add Income
+            </button>
+          </div>
+ 
+          <div class="row g-3">
+            {{#each incomes}}
+              <div class="col-12">
+                <button
+                  type="button"
+                  class="card account-tile income-tile w-100 text-start"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editIncomeModal"
+                  data-id="{{incomeid}}"
+                  data-name="{{incomename}}"
+                  data-type="{{incometype}}"
+                  data-amount="{{amount}}"
+                >
+                  <span class="card-body d-flex flex-wrap gap-2
+                                justify-content-between align-items-center">
+                    <span>
+                      <span class="account-tile-name">{{incomename}}</span>
+                      <span class="expense-category">{{incometype}}</span>
+                    </span>
+                    <span class="fw-semibold text-success">${{amount}}</span>
+                  </span>
+                </button>
+              </div>
+            {{else}}
+              <div class="col-12">
+                <div class="dashboard-empty-state">
+                  <p class="text-muted mb-3">No income sources yet.</p>
+ 
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addIncomeModal"
+                  >
+                    + Add Your First Income
+                  </button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+ 
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+ 
+ 
+  <!-- ===================================
+       MODALS
+       =================================== -->
+ 
+  <!-- Add Savings Modal -->
+  <div
+    class="modal fade"
+    id="addSavingsModal"
+    tabindex="-1"
+    aria-labelledby="addSavingsModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <form id="addSavingsForm" action="/savings" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title section-heading" id="addSavingsModalLabel">Add Savings Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+ 
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="savingsName" class="form-label">Account Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="savingsName"
+                name="accountName"
+                maxlength="50"
+                placeholder="e.g. Emergency Fund"
+                required
+              >
+            </div>
+ 
+            <div class="mb-3">
+              <label for="savingsAmount" class="form-label">Amount Saved</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="savingsAmount"
+                  name="amount"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                >
               </div>
             </div>
           </div>
-        {{else}}
-          <p class="text-muted small">No savings accounts yet.</p>
-        {{/each}}
+ 
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Add</button>
+          </div>
+        </form>
       </div>
-
-      {{! Add Savings button, styled as an empty card }}
-      <div class="row g-2 mt-1">
-        <div class="col-6 col-lg-4">
-          <button
-            type="button"
-            class="card w-100 bg-transparent text-muted"
-            style="border-style: dashed;"
-            data-bs-toggle="modal"
-            data-bs-target="#addSavingsModal"
-            aria-label="Add savings account"
-          >
-            <div class="card-body p-2 d-flex align-items-center justify-content-center">
-              <span class="fs-2 lh-1">+</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
-
-  {{! ===== LEFT HALF: Income ===== }}
-  <div class="col-12 col-md-3">
-    <section class="my-4 dashboard-anchor" id="income-sources">
-      <h2 class="h4 border-bottom pb-2 mb-3">Income</h2>
-
-      <div class="row g-2">
-        {{#each incomes}}
-          <div class="col-12 col-xl-6">
-            <div
-              class="card h-100"
-              role="button"
-              style="cursor: pointer;"
-              data-bs-toggle="modal"
-              data-bs-target="#editIncomeModal"
-              data-id="{{incomeid}}"
-              data-name="{{incomename}}"
-              data-type="{{incometype}}"
-              data-amount="{{amount}}"
-            >
-              <div class="card-body p-2">
-                <h6 class="card-title mb-1">{{incomename}}</h6>
-                <p class="card-text small text-muted mb-0">{{incometype}}</p>
-                <p class="card-text small fw-semibold mb-0">${{amount}}</p>
+ 
+  <!-- Edit Savings Modal -->
+  <div
+    class="modal fade"
+    id="editSavingsModal"
+    tabindex="-1"
+    aria-labelledby="editSavingsModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <form id="editSavingsForm" action="/savings/update" method="POST">
+          <input type="hidden" id="editSavingsId" name="savingsId">
+ 
+          <div class="modal-header">
+            <h5 class="modal-title section-heading" id="editSavingsModalLabel">Edit Savings Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+ 
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editSavingsName" class="form-label">Account Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="editSavingsName"
+                name="accountName"
+                maxlength="50"
+                required
+              >
+            </div>
+ 
+            <div class="mb-3">
+              <label for="editSavingsAmount" class="form-label">Amount Saved</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="editSavingsAmount"
+                  name="amount"
+                  min="0"
+                  step="0.01"
+                  required
+                >
               </div>
             </div>
           </div>
-        {{else}}
-          <p class="text-muted small">No income sources yet.</p>
-        {{/each}}
+ 
+          <div class="modal-footer">
+            <button
+              type="submit"
+              class="btn btn-outline-danger me-auto"
+              formaction="/savings/delete"
+              formnovalidate
+              onclick="return confirm('Remove this savings account?');"
+            >
+              Remove
+            </button>
+            <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Save</button>
+          </div>
+        </form>
       </div>
-
-      {{! Add Income button, styled as an empty card }}
-      <div class="row g-2 mt-1">
-        <div class="col-6 col-xl-4">
-          <button
-            type="button"
-            class="card w-100 bg-transparent text-muted"
-            style="border-style: dashed;"
-            data-bs-toggle="modal"
-            data-bs-target="#addIncomeModal"
-            aria-label="Add income"
-          >
-            <div class="card-body p-2 d-flex align-items-center justify-content-center">
-              <span class="fs-2 lh-1">+</span>
+    </div>
+  </div>
+ 
+  <!-- Add Income Modal -->
+  <div
+    class="modal fade"
+    id="addIncomeModal"
+    tabindex="-1"
+    aria-labelledby="addIncomeModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <form id="addIncomeForm" action="/income" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title section-heading" id="addIncomeModalLabel">Add Income</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+ 
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="incomeName" class="form-label">Income Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="incomeName"
+                name="incomeName"
+                maxlength="50"
+                placeholder="e.g. Campus Job"
+                required
+              >
             </div>
-          </button>
-        </div>
+ 
+            <div class="mb-3">
+              <label for="incomeType" class="form-label">Income Type</label>
+              <select class="form-select" id="incomeType" name="incomeType" required>
+                <option value="Hourly">Hourly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Bi-Weekly">Bi-Weekly</option>
+                <option value="Monthly" selected>Monthly</option>
+              </select>
+            </div>
+ 
+            <div class="mb-3">
+              <label for="incomeAmount" class="form-label">Amount</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="incomeAmount"
+                  name="amount"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+            </div>
+          </div>
+ 
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Add</button>
+          </div>
+        </form>
       </div>
-    </section>
+    </div>
   </div>
-
-</div>
-
-{{! ===== Add Savings Modal ===== }}
-<div
-  class="modal fade"
-  id="addSavingsModal"
-  tabindex="-1"
-  aria-labelledby="addSavingsModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content">
-      <form id="addSavingsForm" action="/savings" method="POST">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addSavingsModalLabel">Add Savings Account</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="savingsName" class="form-label">Account Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="savingsName"
-              name="accountName"
-              maxlength="50"
-              placeholder="e.g. Emergency Fund"
-              required
-            >
+ 
+  <!-- Edit Income Modal -->
+  <div
+    class="modal fade"
+    id="editIncomeModal"
+    tabindex="-1"
+    aria-labelledby="editIncomeModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <form id="editIncomeForm" action="/income/update" method="POST">
+          <input type="hidden" id="editIncomeId" name="incomeId">
+ 
+          <div class="modal-header">
+            <h5 class="modal-title section-heading" id="editIncomeModalLabel">Edit Income</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-
-          <div class="mb-3">
-            <label for="savingsAmount" class="form-label">Amount Saved</label>
-            <div class="input-group">
-              <span class="input-group-text">$</span>
+ 
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editIncomeName" class="form-label">Income Name</label>
               <input
-                type="number"
+                type="text"
                 class="form-control"
-                id="savingsAmount"
-                name="amount"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
+                id="editIncomeName"
+                name="incomeName"
+                maxlength="50"
                 required
               >
             </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">Add</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-{{! ===== Edit Savings Modal ===== }}
-<div
-  class="modal fade"
-  id="editSavingsModal"
-  tabindex="-1"
-  aria-labelledby="editSavingsModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content">
-      <form id="editSavingsForm" action="/savings/update" method="POST">
-        <input type="hidden" id="editSavingsId" name="savingsId">
-
-        <div class="modal-header">
-          <h5 class="modal-title" id="editSavingsModalLabel">Edit Savings Account</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="editSavingsName" class="form-label">Account Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="editSavingsName"
-              name="accountName"
-              maxlength="50"
-              required
-            >
-          </div>
-
-          <div class="mb-3">
-            <label for="editSavingsAmount" class="form-label">Amount Saved</label>
-            <div class="input-group">
-              <span class="input-group-text">$</span>
-              <input
-                type="number"
-                class="form-control"
-                id="editSavingsAmount"
-                name="amount"
-                min="0"
-                step="0.01"
-                required
-              >
+ 
+            <div class="mb-3">
+              <label for="editIncomeType" class="form-label">Income Type</label>
+              <select class="form-select" id="editIncomeType" name="incomeType" required>
+                <option value="Hourly">Hourly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Bi-Weekly">Bi-Weekly</option>
+                <option value="Monthly">Monthly</option>
+              </select>
+            </div>
+ 
+            <div class="mb-3">
+              <label for="editIncomeAmount" class="form-label">Amount</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="editIncomeAmount"
+                  name="amount"
+                  min="0.01"
+                  step="0.01"
+                  required
+                >
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="submit"
-            class="btn btn-outline-danger me-auto"
-            formaction="/savings/delete"
-            formnovalidate
-            onclick="return confirm('Remove this savings account?');"
-          >
-            Remove
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-{{! ===== Add Income Modal ===== }}
-<div
-  class="modal fade"
-  id="addIncomeModal"
-  tabindex="-1"
-  aria-labelledby="addIncomeModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content">
-      <form id="addIncomeForm" action="/income" method="POST">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addIncomeModalLabel">Add Income</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="incomeName" class="form-label">Income Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="incomeName"
-              name="incomeName"
-              maxlength="50"
-              placeholder="e.g. Campus Job"
-              required
+ 
+          <div class="modal-footer">
+            <button
+              type="submit"
+              class="btn btn-outline-danger me-auto"
+              formaction="/income/delete"
+              formnovalidate
+              onclick="return confirm('Remove this income source?');"
             >
+              Remove
+            </button>
+            <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-dark">Save</button>
           </div>
-
-          <div class="mb-3">
-            <label for="incomeType" class="form-label">Income Type</label>
-            <select class="form-select" id="incomeType" name="incomeType" required>
-              <option value="Hourly">Hourly</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Bi-Weekly">Bi-Weekly</option>
-              <option value="Monthly" selected>Monthly</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="incomeAmount" class="form-label">Amount</label>
-            <div class="input-group">
-              <span class="input-group-text">$</span>
-              <input
-                type="number"
-                class="form-control"
-                id="incomeAmount"
-                name="amount"
-                min="0.01"
-                step="0.01"
-                placeholder="0.00"
-                required
-              >
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">Add</button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
+ 
 </div>
-
-{{! ===== Edit Income Modal ===== }}
-<div
-  class="modal fade"
-  id="editIncomeModal"
-  tabindex="-1"
-  aria-labelledby="editIncomeModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content">
-      <form id="editIncomeForm" action="/income/update" method="POST">
-        <input type="hidden" id="editIncomeId" name="incomeId">
-
-        <div class="modal-header">
-          <h5 class="modal-title" id="editIncomeModalLabel">Edit Income</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="editIncomeName" class="form-label">Income Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="editIncomeName"
-              name="incomeName"
-              maxlength="50"
-              required
-            >
-          </div>
-
-          <div class="mb-3">
-            <label for="editIncomeType" class="form-label">Income Type</label>
-            <select class="form-select" id="editIncomeType" name="incomeType" required>
-              <option value="Hourly">Hourly</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Bi-Weekly">Bi-Weekly</option>
-              <option value="Monthly">Monthly</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="editIncomeAmount" class="form-label">Amount</label>
-            <div class="input-group">
-              <span class="input-group-text">$</span>
-              <input
-                type="number"
-                class="form-control"
-                id="editIncomeAmount"
-                name="amount"
-                min="0.01"
-                step="0.01"
-                required
-              >
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="submit"
-            class="btn btn-outline-danger me-auto"
-            formaction="/income/delete"
-            formnovalidate
-            onclick="return confirm('Remove this income source?');"
-          >
-            Remove
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
+ 
 <script>
   // Fill the edit modals with the values from the card that was clicked
   document
@@ -421,7 +517,7 @@
       document.getElementById('editIncomeType').value = card.dataset.type;
       document.getElementById('editIncomeAmount').value = card.dataset.amount;
     });
-
+ 
   document
     .getElementById('editSavingsModal')
     .addEventListener('show.bs.modal', function (event) {
