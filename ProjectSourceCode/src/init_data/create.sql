@@ -64,6 +64,9 @@ CREATE TABLE IF NOT EXISTS userIncome
     amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     FOREIGN KEY (username) REFERENCES users(username)
 );
+ALTER TABLE userIncome
+ADD COLUMN IF NOT EXISTS hoursPerWeek DECIMAL(5,2)
+    CHECK (hoursPerWeek IS NULL OR (hoursPerWeek > 0 AND hoursPerWeek <= 168));
 
 -- User expenses table
 CREATE TABLE IF NOT EXISTS expenses

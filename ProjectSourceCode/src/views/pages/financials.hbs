@@ -198,14 +198,23 @@
                   data-name="{{incomename}}"
                   data-type="{{incometype}}"
                   data-amount="{{amount}}"
+                  data-hours="{{hoursperweek}}"
                 >
                   <span class="card-body d-flex flex-wrap gap-2
                                 justify-content-between align-items-center">
                     <span>
                       <span class="account-tile-name">{{incomename}}</span>
-                      <span class="expense-category">{{incometype}}</span>
+                      <span class="expense-category me-1">{{incometype}}</span>
+                      {{#if hoursperweek}}
+                        <span class="expense-category">{{hoursperweek}} hrs/wk</span>
+                      {{/if}}
                     </span>
-                    <span class="fw-semibold text-success">${{amount}}</span>
+                    <span class="text-end">
+                      <span class="d-block fw-semibold text-success">${{amount}}{{#if hoursperweek}}/hr{{/if}}</span>
+                      {{#if weeklyestimate}}
+                        <span class="d-block small text-muted">≈ ${{weeklyestimate}}/wk</span>
+                      {{/if}}
+                    </span>
                   </span>
                 </button>
               </div>
@@ -402,7 +411,7 @@
             </div>
  
             <div class="mb-3">
-              <label for="incomeAmount" class="form-label">Amount</label>
+              <label for="incomeAmount" id="incomeAmountLabel" class="form-label">Amount</label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input
@@ -416,6 +425,21 @@
                   required
                 >
               </div>
+            </div>
+ 
+            <div class="mb-3 d-none" id="incomeHoursGroup">
+              <label for="incomeHours" class="form-label">Expected Hours per Week</label>
+              <input
+                type="number"
+                class="form-control"
+                id="incomeHours"
+                name="hoursPerWeek"
+                min="0.5"
+                max="168"
+                step="0.5"
+                placeholder="e.g. 15"
+                disabled
+              >
             </div>
           </div>
  
@@ -470,7 +494,7 @@
             </div>
  
             <div class="mb-3">
-              <label for="editIncomeAmount" class="form-label">Amount</label>
+              <label for="editIncomeAmount" id="editIncomeAmountLabel" class="form-label">Amount</label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input
@@ -483,6 +507,21 @@
                   required
                 >
               </div>
+            </div>
+ 
+            <div class="mb-3 d-none" id="editIncomeHoursGroup">
+              <label for="editIncomeHours" class="form-label">Expected Hours per Week</label>
+              <input
+                type="number"
+                class="form-control"
+                id="editIncomeHours"
+                name="hoursPerWeek"
+                min="0.5"
+                max="168"
+                step="0.5"
+                placeholder="e.g. 15"
+                disabled
+              >
             </div>
           </div>
  
@@ -507,6 +546,43 @@
 </div>
  
 <script>
+  // Show the "hours per week" box only when the income type is Hourly.
+  // The box is disabled (so it is not submitted) whenever it is hidden.
+  function setupHourlyToggle(typeId, groupId, hoursId, labelId) {
+    const type = document.getElementById(typeId);
+    const group = document.getElementById(groupId);
+    const hours = document.getElementById(hoursId);
+    const label = document.getElementById(labelId);
+ 
+    function update() {
+      const hourly = type.value === 'Hourly';
+      group.classList.toggle('d-none', !hourly);
+      hours.disabled = !hourly;
+      hours.required = hourly;
+      label.textContent = hourly ? 'Hourly Rate' : 'Amount';
+      if (!hourly) hours.value = '';
+    }
+ 
+    type.addEventListener('change', update);
+    update();
+    return update;
+  }
+ 
+  const updateAddHours = setupHourlyToggle(
+    'incomeType', 'incomeHoursGroup', 'incomeHours', 'incomeAmountLabel'
+  );
+  const updateEditHours = setupHourlyToggle(
+    'editIncomeType', 'editIncomeHoursGroup', 'editIncomeHours', 'editIncomeAmountLabel'
+  );
+ 
+  // Clear the add form after it closes so old input does not linger
+  document
+    .getElementById('addIncomeModal')
+    .addEventListener('hidden.bs.modal', function () {
+      document.getElementById('addIncomeForm').reset();
+      updateAddHours();
+    });
+ 
   // Fill the edit modals with the values from the card that was clicked
   document
     .getElementById('editIncomeModal')
@@ -516,6 +592,8 @@
       document.getElementById('editIncomeName').value = card.dataset.name;
       document.getElementById('editIncomeType').value = card.dataset.type;
       document.getElementById('editIncomeAmount').value = card.dataset.amount;
+      updateEditHours();
+      document.getElementById('editIncomeHours').value = card.dataset.hours || '';
     });
  
   document

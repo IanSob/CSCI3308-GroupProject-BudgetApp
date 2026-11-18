@@ -604,30 +604,66 @@ app.get('/forgot-password', (req, res) => {
 });
 
 
-// Income & Savings
+// ---------------------Income & Savings---------------------------//
+
+const VALID_INCOME_TYPES = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+ 
+// Hours are required for Hourly income and ignored (saved as NULL) for every other type.
+// Returns { ok, hours }.
+const parseIncomeHours = (incomeType, rawHours) => {
+  if (incomeType !== 'Hourly') {
+    return { ok: true, hours: null };
+  }
+  const hours = parseFloat(rawHours);
+  if (!(hours > 0 && hours <= 168)) {
+    return { ok: false, hours: null };
+  }
+  return { ok: true, hours };
+};
+
 app.get('/financials', auth, async (req, res) => {
-  const username = getUsername(req);
   try {
-    const [savingsAccounts, incomes] = await Promise.all([
-      db.any(
-        `SELECT savingsID, accountName, amount FROM userSavings
-         WHERE username = $1 ORDER BY savingsID`,
-        [username]
-      ),
-      db.any(
-        `SELECT incomeID, incomeName, incomeType, amount FROM userIncome
-         WHERE username = $1 ORDER BY incomeID`,
-        [username]
-      ),
-    ]);
-    const totalSavings = savingsAccounts.reduce((total, account) => total + Number(account.amount), 0);
+    const username = req.session.user.username;
+ 
+    const savingsAccounts = await db.any(
+      `SELECT savingsID, accountName, amount
+       FROM userSavings
+       WHERE username = $1
+       ORDER BY savingsID`,
+      [username]
+    );
+ 
+    const incomeRows = await db.any(
+      `SELECT incomeID, incomeName, incomeType, amount, hoursPerWeek
+       FROM userIncome
+       WHERE username = $1
+       ORDER BY incomeID`,
+      [username]
+    );
+ 
+    // DECIMAL columns come back from pg as strings ("15.00"), so convert them.
+    // weeklyEstimate = hourly rate x hours per week, only for hourly income.
+    const incomes = incomeRows.map((row) => {
+      const hours = row.hoursperweek === null ? null : Number(row.hoursperweek);
+      return {
+        ...row,
+        hoursperweek: hours,
+        weeklyestimate: hours ? (Number(row.amount) * hours).toFixed(2) : null,
+      };
+    });
+ 
+    const totalSavings = savingsAccounts.reduce(
+      (total, account) => total + Number(account.amount),
+      0
+    );
+ 
     res.render('pages/financials', {
       savings: totalSavings.toFixed(2),
       savingsAccounts,
       incomes,
     });
-  } catch (error) {
-    console.error('Income and savings error:', error.message);
+  } catch (err) {
+    console.log('ERROR:', err.message || err);
     res.render('pages/financials', {
       savings: '0.00',
       savingsAccounts: [],
@@ -758,49 +794,50 @@ app.post('/savings/delete', auth, async (req, res) => {
 
 // Add Income
 app.post('/income', auth, async (req, res) => {
-  const { incomeName, incomeType, amount } = req.body;
+  const { incomeName, incomeType, amount, hoursPerWeek } = req.body;
   const parsedAmount = parseFloat(amount);
-  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
-
-  if (!incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+  const { ok, hours } = parseIncomeHours(incomeType, hoursPerWeek);
+ 
+  if (!incomeName || !VALID_INCOME_TYPES.includes(incomeType) || !(parsedAmount > 0) || !ok) {
     return res.redirect('/financials');
   }
-
+ 
   try {
     await db.none(
-      `INSERT INTO userIncome (username, incomeName, incomeType, amount)
-       VALUES ($1, $2, $3, $4)`,
-      [getUsername(req), incomeName.trim(), incomeType, parsedAmount]
+      `INSERT INTO userIncome (username, incomeName, incomeType, amount, hoursPerWeek)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount, hours]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
 
 // Edit Income
 app.post('/income/update', auth, async (req, res) => {
-  const { incomeId, incomeName, incomeType, amount } = req.body;
+  const { incomeId, incomeName, incomeType, amount, hoursPerWeek } = req.body;
   const id = parseInt(incomeId, 10);
   const parsedAmount = parseFloat(amount);
-  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
-
-  if (!Number.isInteger(id) || !incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+  const { ok, hours } = parseIncomeHours(incomeType, hoursPerWeek);
+ 
+  if (!Number.isInteger(id) || !incomeName || !VALID_INCOME_TYPES.includes(incomeType) || !(parsedAmount > 0) || !ok) {
     return res.redirect('/financials');
   }
-
+ 
   try {
+    // Switching away from Hourly saves hoursPerWeek as NULL
     await db.none(
       `UPDATE userIncome
-       SET incomeName = $1, incomeType = $2, amount = $3
-       WHERE incomeID = $4 AND username = $5`,
-      [incomeName.trim(), incomeType, parsedAmount, id, getUsername(req)]
+       SET incomeName = $1, incomeType = $2, amount = $3, hoursPerWeek = $4
+       WHERE incomeID = $5 AND username = $6`,
+      [incomeName.trim(), incomeType, parsedAmount, hours, id, req.session.user.username]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
 
