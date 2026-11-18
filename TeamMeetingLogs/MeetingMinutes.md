@@ -58,3 +58,7 @@ Creative functions for interpreting data
 - release notes, team notes
 - work day tomorrow, so we will start deployment next week
 - Hope to get financials working by next Thursday
+
+11/17 Group Meeting Notes:
+- Starting the Analysis Page
+- Splitting the Presentation Up
