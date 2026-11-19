@@ -1,17 +1,28 @@
 
 
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom app-navbar">
-  <div class="container-fluid px-3 px-lg-4">
+<nav class="navbar navbar-expand-xl navbar-light bg-white border-bottom app-navbar">
 
+  <div class="container-fluid px-3 px-lg-4 app-nav-container">
 
-    <a class="navbar-brand fw-bold" href="/">
-      Flash Financial Savings
-    </a>
+    <!-- App Name / Logo -->
+    {{#if isAuthenticated}}
 
+      <a class="navbar-brand fw-bold app-brand" href="/">
+        Flash Financial Savings
+      </a>
 
+    {{else}}
+
+      <span class="navbar-brand fw-bold app-brand">
+        Flash Financial Savings
+      </span>
+
+    {{/if}}
+
+    <!-- Mobile Hamburger Menu -->
     <button
-      class="navbar-toggler"
+      class="navbar-toggler app-toggler"
       type="button"
       data-bs-toggle="collapse"
       data-bs-target="#navbarNav"
@@ -22,52 +33,130 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
+    <!-- Navigation Menu -->
     <div class="collapse navbar-collapse" id="navbarNav">
 
+      {{#if isAuthenticated}}
 
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link {{#if activeHome}}active fw-semibold{{/if}}" href="/">Home</a></li>
-        <li class="nav-item"><a class="nav-link {{#if activeFinancials}}active fw-semibold{{/if}}" href="/financials">Financials</a></li>
-        <li class="nav-item"><a class="nav-link {{#if activeExpenses}}active fw-semibold{{/if}}" href="/expenses">Expenses</a></li>
-        <li class="nav-item"><span class="nav-link disabled" title="Coming soon">Income</span></li>
-        <li class="nav-item"><span class="nav-link disabled" title="Coming soon">Savings</span></li>
+        <!-- LOGGED-IN MAIN NAVIGATION -->
+        <ul class="navbar-nav me-auto mb-2 mb-xl-0">
 
+          <!-- Home -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeHome}}active fw-semibold{{/if}}"
+              href="/"
+            >
+              Home
+            </a>
+          </li>
 
-        <li class="nav-item">
-          
-        <a class="nav-link {{#if activeDashboard}}active fw-semibold{{/if}}"
-           href="/dashboard">
-            Dashboard
-        </a>
+          <!-- Dashboard -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeDashboard}}active fw-semibold{{/if}}"
+              href="/dashboard"
+            >
+              Dashboard
+            </a>
+          </li>
 
-        </li>
+          <!-- Income & Savings -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeFinancials}}active fw-semibold{{/if}}"
+              href="/financials"
+            >
+              Income &amp; Savings
+            </a>
+          </li>
 
+          <!-- Expenses -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeExpenses}}active fw-semibold{{/if}}"
+              href="/expenses"
+            >
+              Expenses
+            </a>
+          </li>
 
+          <!-- Analysis -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeAnalysis}}active fw-semibold{{/if}}"
+              href="/analysis"
+              {{#if activeAnalysis}}aria-current="page"{{/if}}
+            >
+              Analysis
+            </a>
+          </li>
 
+        </ul>
 
+        <!-- LOGGED-IN RIGHT SIDE NAVIGATION -->
+        <ul class="navbar-nav align-items-xl-center gap-xl-2">
 
+          <!-- Settings is planned but does not have a route yet. -->
+          <li class="nav-item">
+            <span class="nav-link app-nav-soon" aria-disabled="true">
+              Settings <span class="app-soon-label">Soon</span>
+            </span>
+          </li>
 
+          <!-- Logout -->
+          <li class="nav-item">
 
+            <form
+              action="/logout"
+              method="POST"
+              class="m-0"
+            >
 
+              <button
+                class="btn btn-dark app-nav-button"
+                type="submit"
+              >
+                Logout
+              </button>
 
+            </form>
 
-      </ul>
+          </li>
 
+        </ul>
 
-      <ul class="navbar-nav">
+      {{else}}
 
+        <!-- LOGGED-OUT NAVIGATION -->
+        <ul class="navbar-nav ms-auto align-items-xl-center gap-xl-2">
 
-        <li class="nav-item">
-          <span class="nav-link disabled" title="Coming soon">Settings</span>
-        </li>
+          <!-- Register -->
+          <li class="nav-item">
+            <a
+              class="nav-link {{#if activeRegister}}active fw-semibold{{/if}}"
+              href="/register"
+            >
+              Register
+            </a>
+          </li>
 
+          <!-- Login -->
+          <li class="nav-item">
+            <a
+              class="btn btn-dark app-nav-button"
+              href="/login"
+            >
+              Login
+            </a>
+          </li>
 
-        <li class="nav-item">
-          <form action="/logout" method="POST" class="m-0"><button class="btn btn-dark btn-sm" type="submit">Logout</button></form>
-        </li>
+        </ul>
 
-      </ul>
+      {{/if}}
 
     </div>
+
   </div>
+
 </nav>

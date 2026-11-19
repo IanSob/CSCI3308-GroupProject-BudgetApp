@@ -7,6 +7,8 @@ const app = express();
 const handlebars = require('express-handlebars');
 const Handlebars = require('handlebars');
 const path = require('path');
+const { readFileSync } = require('node:fs');
+const {getHomeOverview} = require('./homeOverview');
 const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -15,6 +17,7 @@ const axios = require('axios');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const validation = require('./validation');
+const { buildFinancialsSummary } = require('./financialsSummary');
 
 // *****************************************************
 // Section 2 : Connect to DB
@@ -38,15 +41,6 @@ const dbConfig = {
 };
 
 const db = pgp(dbConfig);
-
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful');
-    obj.done();
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
 
 // *****************************************************
 // Section 3 : App Settings
@@ -238,21 +232,54 @@ const processRecurringExpenses = async (username) => {
   });
 };
 
-// Shared display information for Handlebars. Route authorization stays unchanged.
+// Shared navigation information for Handlebars
 app.use((req, res, next) => {
+
+  // Check if the user is logged in
   res.locals.isAuthenticated = Boolean(req.session.user);
+
+  // Main navigation pages
   res.locals.activeHome = req.path === '/';
   res.locals.activeDashboard = req.path === '/dashboard';
   res.locals.activeFinancials = req.path === '/financials';
   res.locals.activeExpenses = req.path === '/expenses';
+  res.locals.activeAnalysis = req.path === '/analysis';
+
+  // Account navigation
+  res.locals.activeSettings = req.path === '/settings';
   res.locals.activeLogin = req.path === '/login';
   res.locals.activeRegister = req.path === '/register';
+
   next();
 });
 
 // Home page
-app.get('/', (req, res) => {
-  res.render('pages/home.hbs');
+app.get('/', async (req, res) => {
+  const sessionUser = req.session && req.session.user;
+  if (!sessionUser) {
+    return res.render('pages/home.hbs', { homeLoggedIn: false });
+  }
+
+  const username = getUsername(req);
+  if (typeof username !== 'string' || !username) {
+    return res.render('pages/home.hbs', { homeLoggedIn: false });
+  }
+
+  try {
+    const home = await getHomeOverview(db, username);
+    return res.render('pages/home.hbs', {
+      ...home,
+      homeLoggedIn: true,
+      homeName: (typeof sessionUser === 'object' && sessionUser.name) || username,
+    });
+  } catch (error) {
+    console.error('Home overview error:', error.message || error);
+    return res.render('pages/home.hbs', {
+      homeLoggedIn: true,
+      homeName: username,
+      partialData: true,
+    });
+  }
 });
 
 // Expenses Display
@@ -577,7 +604,23 @@ app.get('/forgot-password', (req, res) => {
 });
 
 
-// Financials
+// ---------------------Income & Savings---------------------------//
+
+const VALID_INCOME_TYPES = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
+ 
+// Hours are required for Hourly income and ignored (saved as NULL) for every other type.
+// Returns { ok, hours }.
+const parseIncomeHours = (incomeType, rawHours) => {
+  if (incomeType !== 'Hourly') {
+    return { ok: true, hours: null };
+  }
+  const hours = parseFloat(rawHours);
+  if (!(hours > 0 && hours <= 168)) {
+    return { ok: false, hours: null };
+  }
+  return { ok: true, hours };
+};
+
 app.get('/financials', auth, async (req, res) => {
   try {
     const username = req.session.user.username;
@@ -590,15 +633,25 @@ app.get('/financials', auth, async (req, res) => {
       [username]
     );
  
-    const incomes = await db.any(
-      `SELECT incomeID, incomeName, incomeType, amount
+    const incomeRows = await db.any(
+      `SELECT incomeID, incomeName, incomeType, amount, hoursPerWeek
        FROM userIncome
        WHERE username = $1
        ORDER BY incomeID`,
       [username]
     );
  
-    // DECIMAL columns come back from pg as strings, so convert before adding
+    // DECIMAL columns come back from pg as strings ("15.00"), so convert them.
+    // weeklyEstimate = hourly rate x hours per week, only for hourly income.
+    const incomes = incomeRows.map((row) => {
+      const hours = row.hoursperweek === null ? null : Number(row.hoursperweek);
+      return {
+        ...row,
+        hoursperweek: hours,
+        weeklyestimate: hours ? (Number(row.amount) * hours).toFixed(2) : null,
+      };
+    });
+ 
     const totalSavings = savingsAccounts.reduce(
       (total, account) => total + Number(account.amount),
       0
@@ -620,8 +673,55 @@ app.get('/financials', auth, async (req, res) => {
     });
   }
 });
- 
- 
+
+
+// Analysis
+app.get('/analysis', auth, async (req, res) => {
+  const username = getUsername(req);
+  const unavailable = [];
+
+  async function fetchRows(section, sql) {
+    try {
+      return await db.any(sql, [username]);
+    } catch (error) {
+      unavailable.push(section);
+      console.error(`Analysis ${section} query failed:`, error.message || error);
+      return [];
+    }
+  }
+
+  const [savingsRows, incomeRows, expenseRows] = await Promise.all([
+    fetchRows('savings',
+      `SELECT savingsID, accountName, amount FROM userSavings
+       WHERE username = $1 ORDER BY savingsID`),
+    fetchRows('income',
+      `SELECT incomeID, incomeName, incomeType, amount FROM userIncome
+       WHERE username = $1 ORDER BY incomeID`),
+    fetchRows('expenses',
+      `SELECT expense_id, expense_name, amount, category FROM expenses
+       WHERE username = $1 ORDER BY expense_id DESC`),
+  ]);
+
+  const summary = buildFinancialsSummary({
+    savingsAccounts: savingsRows,
+    incomes: incomeRows,
+    expenses: expenseRows,
+  });
+  const savingsAvailable = !unavailable.includes('savings');
+  const incomesAvailable = !unavailable.includes('income');
+  const expensesAvailable = !unavailable.includes('expenses');
+
+  res.render('pages/analysis', {
+    ...summary,
+    savingsAvailable,
+    incomesAvailable,
+    expensesAvailable,
+    dataUnavailable: unavailable.length > 0,
+    warnings: unavailable.join(', '),
+  });
+});
+
+
 // ----- Add Savings Account -----
 app.post('/savings', auth, async (req, res) => {
   const { accountName, amount } = req.body;
@@ -635,7 +735,7 @@ app.post('/savings', auth, async (req, res) => {
     await db.none(
       `INSERT INTO userSavings (username, accountName, amount)
        VALUES ($1, $2, $3)`,
-      [req.session.user.username, accountName.trim(), parsedAmount]
+      [getUsername(req), accountName.trim(), parsedAmount]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -661,7 +761,7 @@ app.post('/savings/update', auth, async (req, res) => {
       `UPDATE userSavings
        SET accountName = $1, amount = $2
        WHERE savingsID = $3 AND username = $4`,
-      [accountName.trim(), parsedAmount, id, req.session.user.username]
+      [accountName.trim(), parsedAmount, id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -682,7 +782,7 @@ app.post('/savings/delete', auth, async (req, res) => {
   try {
     await db.none(
       'DELETE FROM userSavings WHERE savingsID = $1 AND username = $2',
-      [id, req.session.user.username]
+      [id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -694,49 +794,50 @@ app.post('/savings/delete', auth, async (req, res) => {
 
 // Add Income
 app.post('/income', auth, async (req, res) => {
-  const { incomeName, incomeType, amount } = req.body;
+  const { incomeName, incomeType, amount, hoursPerWeek } = req.body;
   const parsedAmount = parseFloat(amount);
-  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
-
-  if (!incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+  const { ok, hours } = parseIncomeHours(incomeType, hoursPerWeek);
+ 
+  if (!incomeName || !VALID_INCOME_TYPES.includes(incomeType) || !(parsedAmount > 0) || !ok) {
     return res.redirect('/financials');
   }
-
+ 
   try {
     await db.none(
-      `INSERT INTO userIncome (username, incomeName, incomeType, amount)
-       VALUES ($1, $2, $3, $4)`,
-      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount]
+      `INSERT INTO userIncome (username, incomeName, incomeType, amount, hoursPerWeek)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.session.user.username, incomeName.trim(), incomeType, parsedAmount, hours]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
 
 // Edit Income
 app.post('/income/update', auth, async (req, res) => {
-  const { incomeId, incomeName, incomeType, amount } = req.body;
+  const { incomeId, incomeName, incomeType, amount, hoursPerWeek } = req.body;
   const id = parseInt(incomeId, 10);
   const parsedAmount = parseFloat(amount);
-  const validTypes = ['Hourly', 'Weekly', 'Bi-Weekly', 'Monthly'];
-
-  if (!Number.isInteger(id) || !incomeName || !validTypes.includes(incomeType) || !(parsedAmount > 0)) {
+  const { ok, hours } = parseIncomeHours(incomeType, hoursPerWeek);
+ 
+  if (!Number.isInteger(id) || !incomeName || !VALID_INCOME_TYPES.includes(incomeType) || !(parsedAmount > 0) || !ok) {
     return res.redirect('/financials');
   }
-
+ 
   try {
+    // Switching away from Hourly saves hoursPerWeek as NULL
     await db.none(
       `UPDATE userIncome
-       SET incomeName = $1, incomeType = $2, amount = $3
-       WHERE incomeID = $4 AND username = $5`,
-      [incomeName.trim(), incomeType, parsedAmount, id, req.session.user.username]
+       SET incomeName = $1, incomeType = $2, amount = $3, hoursPerWeek = $4
+       WHERE incomeID = $5 AND username = $6`,
+      [incomeName.trim(), incomeType, parsedAmount, hours, id, req.session.user.username]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
   }
-
+ 
   res.redirect('/financials');
 });
 
@@ -751,7 +852,7 @@ app.post('/income/delete', auth, async (req, res) => {
   try {
     await db.none(
       'DELETE FROM userIncome WHERE incomeID = $1 AND username = $2',
-      [id, req.session.user.username]
+      [id, getUsername(req)]
     );
   } catch (err) {
     console.log('ERROR:', err.message || err);
@@ -852,41 +953,62 @@ app.post('/register', no_auth, async (req, res) =>
 {
   const pass = req.body.password;
   const passConfirm = req.body.passwordConfirm;
-  const usr = String(req.body.username || '').trim();
-  const usrName = String(req.body.name || '').trim();
-  const email = String(req.body.email || '').trim();
+  const usr = req.body.username;
+  const usrName = req.body.name;
+  const email = req.body.email;
 
   const errMessage = validation.validateRegistration(pass, passConfirm, usr, usrName, email);
-  // We have all the required data
+  // We have all the required data and it is formatted properly
   if(!errMessage)
   {
     try
     {
-      // The hashed password
-      const hash = await bcrypt.hash(pass, 10);
+      // The username already exists
+      if((await db.any("SELECT username FROM users WHERE username = $1", [usr])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Username already exists."
+        });
+      }
+      // The email is already taken
+      else if((await db.any("SELECT email FROM users WHERE email = $1", [email])).length > 0)
+      {
+        res.status(400).render('pages/register.hbs', 
+        {
+          error: true,
+          message: "Email is taken."
+        });
+      }
+      else
+      {
+        // The hashed password
+        const hash = await bcrypt.hash(pass, 10);
 
-      await db.none(
-        `INSERT INTO users (username, email, name, password)
-         VALUES ($1, $2, $3, $4)`,
-        [usr, email, usrName, hash]
-      );
+        await db.none(
+          `INSERT INTO users (username, email, name, password)
+          VALUES ($1, $2, $3, $4)`,
+          [usr, email, usrName, hash]
+        );
 
-      // Log the new user in with the same session shape as /login
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).send('Unable to start your session.');
-        }
-
-        req.session.user = { username: usr };
-
-        req.session.save((err) => {
+        // Log the new user in with the same session shape as /login
+        req.session.regenerate((err) => {
           if (err) {
-            return res.status(500).send('Unable to save session.');
+            return res.status(500).send('Unable to start your session.');
           }
 
-          res.redirect(303, '/dashboard');
+          req.session.user = { username: usr };
+
+          req.session.save((err) => {
+            if (err) {
+              return res.status(500).send('Unable to save session.');
+            }
+
+            res.redirect(303, '/dashboard');
+          });
         });
-      });
+      }
     }
     catch (err)
     {
@@ -902,10 +1024,10 @@ app.post('/register', no_auth, async (req, res) =>
   else
   {
     res.status(400).render('pages/register.hbs', 
-      {
-        error: true,
-        message: errMessage
-      });
+    {
+      error: true,
+      message: errMessage
+    });
   }
 });
 
@@ -1011,23 +1133,34 @@ app.post('/login', no_auth, async (req, res) => {
     }
 });
 
+
 // Dashboard Route
 app.get('/dashboard', auth, async (req, res) => {
   try {
-    // Identify the logged-in user
-    const username =
-      typeof req.session.user === 'string'
-        ? req.session.user
-        : req.session.user.username;
 
-    // Get the user's savings
+    // 1. Identify the logged-in user
+
+    const username = getUsername(req);
+
+
+    // 2. Process recurring expenses
+
+    await processRecurringExpenses(username);
+
+
+    // 3. Get total savings
+
     const savingsRow = await db.one(
-      'SELECT COALESCE(SUM(amount), 0) AS total FROM userSavings WHERE username = $1',
+      `SELECT COALESCE(SUM(amount), 0) AS total
+       FROM userSavings
+       WHERE username = $1`,
       [username]
-   );
+    );
 
 
-    // Get the user's income sources
+    // 4. Get income sources
+    
+
     const incomes = await db.any(
       `SELECT incomeName, incomeType, amount
        FROM userIncome
@@ -1036,61 +1169,139 @@ app.get('/dashboard', auth, async (req, res) => {
       [username]
     );
 
-    // Get the user's expenses
+
+    // 5. Get recorded expenses
     const expenses = await db.any(
-      `SELECT expense_id, expense_name, amount, category
+      `SELECT expense_id,
+              expense_name,
+              amount,
+              category
        FROM expenses
        WHERE username = $1
        ORDER BY expense_id DESC`,
       [username]
     );
 
-    // Calculate total expenses
+    // 6. Get upcoming recurring expenses
+
+    const recurringExpenses = await db.any(
+      `SELECT recurring_expense_id,
+              expense_name,
+              amount,
+              category,
+              frequency,
+              TO_CHAR(
+                next_due_date,
+                'YYYY-MM-DD'
+              ) AS next_due_date
+       FROM recurring_expenses
+       WHERE username = $1
+         AND active = TRUE
+         AND next_due_date > CURRENT_DATE
+       ORDER BY next_due_date ASC,
+                recurring_expense_id ASC
+       LIMIT 5`,
+      [username]
+    );
+
+
+    
+    // 7. Format financial data
+
+    const formatMoney = (amount) => {
+      return Number(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    };
+
+
+    // Calculate total recorded expenses
     const totalExpenses = expenses.reduce(
       (total, expense) => total + Number(expense.amount),
       0
     );
 
-    // Format income sources for display
+
+    // Format income sources
     const formattedIncomes = incomes.map(income => ({
       name: income.incomename,
       type: income.incometype,
-      amount: Number(income.amount).toFixed(2)
+      amount: formatMoney(income.amount)
     }));
 
-    // Format the five most recent expense records
+
+    // Format five most recently recorded expenses
     const recentExpenses = expenses.slice(0, 5).map(expense => ({
       description: expense.expense_name,
       category: expense.category,
-      amount: Number(expense.amount).toFixed(2)
+      amount: formatMoney(expense.amount)
     }));
 
-    // Render the dashboard
+
+    // Format recurring expenses
+    const formattedRecurringExpenses = recurringExpenses.map(expense => ({
+      name: expense.expense_name,
+      category: expense.category,
+      amount: formatMoney(expense.amount),
+      frequency: expense.frequency,
+      nextDueDate: expense.next_due_date
+    }));
+
+
+    // =====================================
+    // 8. Render Dashboard
+    // =====================================
+
     res.render('pages/dashboard', {
+
       username: username,
-      savingsAmount: Number(savingsRow.total).toFixed(2),
-      totalExpenses: totalExpenses.toFixed(2),
+
+      // Financial summary
+      savingsAmount: formatMoney(savingsRow.total),
+      totalExpenses: formatMoney(totalExpenses),
       incomeCount: formattedIncomes.length,
+
+      // Income sources
       incomes: formattedIncomes,
+
+      // Recent expenses
       recentExpenses: recentExpenses,
-      hasExpenses: recentExpenses.length > 0
+      hasExpenses: recentExpenses.length > 0,
+
+      // Recurring expenses
+      upcomingRecurringExpenses: formattedRecurringExpenses,
+      hasUpcomingExpenses: formattedRecurringExpenses.length > 0
+
     });
 
   } catch (error) {
+
     console.error('Dashboard error:', error.message);
 
     res.status(500).render('pages/dashboard', {
+
       errorMessage: 'Unable to load your financial data.',
+
       username: '',
+
       savingsAmount: '0.00',
       totalExpenses: '0.00',
       incomeCount: 0,
+
       incomes: [],
+
       recentExpenses: [],
-      hasExpenses: false
+      hasExpenses: false,
+
+      upcomingRecurringExpenses: [],
+      hasUpcomingExpenses: false
+
     });
+
   }
 });
+
 
 
 // Log out the current user without affecting registration or login handling.
@@ -1106,5 +1317,17 @@ app.post('/logout', auth, (req, res) => {
 // Section 5 : Start Server
 // *****************************************************
 
-app.listen(3000);
-console.log('Server is listening on port 3000');
+async function startServer() {
+  const schema = readFileSync(path.join(__dirname, 'init_data', 'create.sql'), 'utf8');
+  await db.tx(async transaction => {
+    await transaction.one('SELECT pg_advisory_xact_lock(3308, 1)');
+    await transaction.none(schema);
+  });
+  app.listen(3000, () => console.log('Server is listening on port 3000'));
+}
+
+startServer().catch(error => {
+  console.error('Database initialization failed:', error.message);
+  pgp.end();
+  process.exitCode = 1;
+});

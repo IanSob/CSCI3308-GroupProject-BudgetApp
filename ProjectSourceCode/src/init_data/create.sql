@@ -26,6 +26,34 @@ CREATE TABLE IF NOT EXISTS userSavings
     FOREIGN KEY (username) REFERENCES users(username)
 );
 
+-- Upgrade Docker volumes created before users could add multiple savings accounts.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'usersavings'::regclass
+          AND attname = 'savings' AND NOT attisdropped
+    ) AND NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'usersavings'::regclass
+          AND attname = 'amount' AND NOT attisdropped
+    ) THEN
+        ALTER TABLE userSavings RENAME COLUMN savings TO amount;
+        ALTER TABLE userSavings
+            ADD COLUMN savingsID SERIAL,
+            ADD COLUMN accountName VARCHAR(50) NOT NULL DEFAULT 'Savings';
+        UPDATE userSavings SET amount = 0 WHERE amount IS NULL;
+        ALTER TABLE userSavings
+            ALTER COLUMN amount SET DEFAULT 0,
+            ALTER COLUMN amount SET NOT NULL,
+            ALTER COLUMN accountName DROP DEFAULT,
+            DROP CONSTRAINT usersavings_pkey,
+            ADD PRIMARY KEY (savingsID),
+            ADD FOREIGN KEY (username) REFERENCES users(username) NOT VALID;
+    END IF;
+END;
+$$;
+
 -- User income table
 CREATE TABLE IF NOT EXISTS userIncome
 (
@@ -36,6 +64,9 @@ CREATE TABLE IF NOT EXISTS userIncome
     amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     FOREIGN KEY (username) REFERENCES users(username)
 );
+ALTER TABLE userIncome
+ADD COLUMN IF NOT EXISTS hoursPerWeek DECIMAL(5,2)
+    CHECK (hoursPerWeek IS NULL OR (hoursPerWeek > 0 AND hoursPerWeek <= 168));
 
 -- User expenses table
 CREATE TABLE IF NOT EXISTS expenses
