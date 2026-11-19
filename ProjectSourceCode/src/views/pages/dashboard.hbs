@@ -1,519 +1,529 @@
 
 <!-- Flash Financial Savings Dashboard -->
-
+ 
 <div class="container py-4 ffs-dashboard">
-
+ 
   {{#if errorMessage}}
-
+ 
     <div class="alert alert-danger" role="alert">
       {{errorMessage}}
     </div>
-
+ 
     <a href="/dashboard" class="btn btn-dark">
       Try Again
     </a>
-
+ 
   {{else}}
-
+ 
     <!-- ===================================
          DASHBOARD HEADER
          =================================== -->
-
+ 
     <div class="d-flex flex-wrap gap-3
                 justify-content-between
                 align-items-center mb-4">
-
+ 
       <div>
-
+ 
         <p class="dashboard-eyebrow mb-1">
           YOUR FINANCIAL OVERVIEW
         </p>
-
+ 
         <h1 class="dashboard-heading mb-1">
           Dashboard
         </h1>
-
+ 
         <p class="text-muted mb-0">
           Manage your money with confidence.
         </p>
-
+ 
       </div>
-
+ 
       <a href="/expenses#add-expense"
          class="btn btn-dark dashboard-action-btn">
-
+ 
         + Add Expense
-
+ 
       </a>
-
+ 
     </div>
-
-
+ 
+ 
     <!-- ===================================
          FINANCIAL SUMMARY CARDS
          =================================== -->
-
+ 
     <div class="row g-3 mb-4">
-
+ 
       <!-- Total Savings -->
-
+ 
       <div class="col-12 col-md-4">
-
+ 
         <div class="card h-100 shadow-sm
                     summary-card savings-card">
-
+ 
           <div class="card-body">
-
+ 
             <div class="summary-icon mb-3">
               $
             </div>
-
+ 
             <h5 class="card-title text-muted">
               Total Savings
             </h5>
-
+ 
             <h2 class="summary-value mb-3">
               ${{savingsAmount}}
             </h2>
-
+ 
             <p class="small text-muted">
               Combined balance of your savings accounts.
             </p>
-
+ 
             <a href="/financials#savings-accounts"
                class="btn btn-outline-dark btn-sm">
-
+ 
               View Savings
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         </div>
-
+ 
       </div>
-
-
-      <!-- Income Sources -->
-
+ 
+ 
+      <!-- Expected Monthly Net -->
+ 
       <div class="col-12 col-md-4">
-
+ 
         <div class="card h-100 shadow-sm
                     summary-card income-card">
-
+ 
           <div class="card-body">
-
-            <div class="summary-icon income-icon mb-3">
-              ↑
+ 
+            <div class="summary-icon {{#if netIsPositive}}income-icon{{else}}expense-icon{{/if}} mb-3">
+              {{#if netIsPositive}}↑{{else}}↓{{/if}}
             </div>
-
+ 
             <h5 class="card-title text-muted">
-              Income Sources
+              Expected Monthly Net
             </h5>
-
-            <h2 class="summary-value text-success mb-3">
-              {{incomeCount}}
+ 
+            <h2 class="summary-value {{#if netIsPositive}}text-success{{else}}text-danger{{/if}} mb-3">
+              {{#if netIsPositive}}+{{else}}-{{/if}}${{netMonthly}}
             </h2>
-
-            <p class="small text-muted">
-              Your recorded sources of income.
+ 
+            <p class="small text-muted mb-1">
+              Estimated monthly income minus recurring expenses.
             </p>
-
+ 
+            <p class="small text-muted mb-3">
+              ${{monthlyIncome}} income &minus; ${{monthlyRecurring}} recurring
+            </p>
+ 
+            {{#if incomesMissingHours}}
+              <p class="small mb-3" style="color: #7c5c19;">
+                {{incomesMissingHours}} hourly income(s) have no hours per week and are not counted.
+              </p>
+            {{/if}}
+ 
             <a href="/financials#income-sources"
                class="btn btn-outline-dark btn-sm">
-
+ 
               View Income
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         </div>
-
+ 
       </div>
-
-
+ 
+ 
       <!-- Total Expenses -->
-
+ 
       <div class="col-12 col-md-4">
-
+ 
         <div class="card h-100 shadow-sm
                     summary-card expenses-card">
-
+ 
           <div class="card-body">
-
+ 
             <div class="summary-icon expense-icon mb-3">
               ↓
             </div>
-
+ 
             <h5 class="card-title text-muted">
               Total Expenses
             </h5>
-
+ 
             <h2 class="summary-value text-danger mb-3">
               ${{totalExpenses}}
             </h2>
-
+ 
             <p class="small text-muted">
               All your recorded expenses.
             </p>
-
+ 
             <a href="/expenses"
                class="btn btn-outline-dark btn-sm">
-
+ 
               View Expenses
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         </div>
-
+ 
       </div>
-
+ 
     </div>
-
-
+ 
+ 
     <!-- ===================================
          INCOME SOURCES & QUICK ACTIONS
          =================================== -->
-
+ 
     <div class="row g-3 mb-4">
-
+ 
       <!-- Income Sources -->
-
+ 
       <div class="col-12 col-lg-7">
-
+ 
         <div class="card h-100 shadow-sm">
-
+ 
           <div class="card-body">
-
+ 
             <h5 class="section-heading mb-3">
               Income Sources
             </h5>
-
+ 
             {{#each incomes}}
-
+ 
               <div class="income-item
                           d-flex flex-wrap gap-2
                           justify-content-between
                           align-items-center
                           border-bottom py-3">
-
+ 
                 <div>
-
+ 
                   <strong>{{this.name}}</strong>
-
+ 
                   <p class="small text-muted mb-0">
                     {{this.type}}
                   </p>
-
+ 
                 </div>
-
+ 
                 <span class="fw-semibold text-success">
                   ${{this.amount}}
                 </span>
-
+ 
               </div>
-
+ 
             {{else}}
-
+ 
               <p class="text-muted">
                 No income sources recorded yet.
               </p>
-
+ 
             {{/each}}
-
+ 
             <a href="/financials#income-sources"
                class="btn btn-outline-dark mt-3">
-
+ 
               Manage Income &amp; Savings
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         </div>
-
+ 
       </div>
-
-
+ 
+ 
       <!-- Quick Actions -->
-
+ 
       <div class="col-12 col-lg-5">
-
+ 
         <div class="card h-100 shadow-sm">
-
+ 
           <div class="card-body">
-
+ 
             <h5 class="section-heading mb-3">
               Quick Actions
             </h5>
-
+ 
             <div class="d-grid gap-2">
-
+ 
               <a href="/financials#income-sources"
                  class="btn btn-outline-dark
                         quick-action">
-
+ 
                 <span>Manage Income</span>
                 <span>›</span>
-
+ 
               </a>
-
-
+ 
+ 
               <a href="/financials#savings-accounts"
                  class="btn btn-outline-dark
                         quick-action">
-
+ 
                 <span>Manage Savings</span>
                 <span>›</span>
-
+ 
               </a>
-
+ 
               <a href="/expenses#add-expense"
                  class="btn btn-outline-dark
                         quick-action">
-
+ 
                 <span>Add Expense</span>
                 <span>›</span>
-
+ 
               </a>
-
-
+ 
+ 
               <a href="/expenses#recurring-expenses"
                  class="btn btn-outline-dark
                         quick-action">
-
+ 
                 <span>Recurring Expenses</span>
                 <span>›</span>
-
+ 
               </a>
-
+ 
             </div>
-
+ 
           </div>
-
+ 
         </div>
-
+ 
       </div>
-
+ 
     </div>
-
-
+ 
+ 
     <!-- ===================================
          UPCOMING RECURRING EXPENSES
          =================================== -->
-
+ 
     <div class="card shadow-sm mb-4">
-
+ 
       <div class="card-body">
-
+ 
         <div class="d-flex flex-wrap gap-2
                     justify-content-between
                     align-items-center mb-3">
-
+ 
           <h5 class="section-heading mb-0">
             Upcoming Recurring Expenses
           </h5>
-
+ 
           <a href="/expenses#recurring-expenses"
              class="dashboard-link">
-
+ 
             View Schedules
-
+ 
           </a>
-
+ 
         </div>
-
+ 
         {{#if hasUpcomingExpenses}}
-
+ 
           <div class="table-responsive">
-
+ 
             <table class="table table-hover
                           align-middle mb-0">
-
+ 
               <thead>
-
+ 
                 <tr>
-
+ 
                   <th scope="col">Expense</th>
-
+ 
                   <th scope="col">Frequency</th>
-
+ 
                   <th scope="col">Next Payment</th>
-
+ 
                   <th scope="col" class="text-end">
                     Amount
                   </th>
-
+ 
                 </tr>
-
+ 
               </thead>
-
+ 
               <tbody>
-
+ 
                 {{#each upcomingRecurringExpenses}}
-
+ 
                   <tr>
-
+ 
                     <td>
-
+ 
                       <strong>{{this.name}}</strong>
-
+ 
                       <div class="small text-muted">
                         {{this.category}}
                       </div>
-
+ 
                     </td>
-
+ 
                     <td class="text-capitalize">
                       {{this.frequency}}
                     </td>
-
+ 
                     <td>
                       {{this.nextDueDate}}
                     </td>
-
+ 
                     <td class="text-end fw-semibold">
                       ${{this.amount}}
                     </td>
-
+ 
                   </tr>
-
+ 
                 {{/each}}
-
+ 
               </tbody>
-
+ 
             </table>
-
+ 
           </div>
-
+ 
         {{else}}
-
+ 
           <div class="dashboard-empty-state">
-
+ 
             <p class="text-muted mb-3">
               No upcoming recurring expenses.
             </p>
-
+ 
             <a href="/expenses#add-recurring-expense"
                class="btn btn-outline-dark btn-sm">
-
+ 
               + Add Recurring Expense
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         {{/if}}
-
+ 
       </div>
-
+ 
     </div>
-
-
+ 
+ 
     <!-- ===================================
          RECENT EXPENSES
          =================================== -->
-
+ 
     <div class="card shadow-sm mb-4">
-
+ 
       <div class="card-body">
-
+ 
         <div class="d-flex flex-wrap gap-2
                     justify-content-between
                     align-items-center mb-3">
-
+ 
           <h5 class="section-heading mb-0">
             Recent Expenses
           </h5>
-
+ 
           <a href="/expenses"
              class="dashboard-link">
-
+ 
             View All
-
+ 
           </a>
-
+ 
         </div>
-
+ 
         {{#if hasExpenses}}
-
+ 
           <div class="table-responsive">
-
+ 
             <table class="table table-hover
                           align-middle mb-0">
-
+ 
               <thead>
-
+ 
                 <tr>
-
+ 
                   <th scope="col">Description</th>
-
+ 
                   <th scope="col">Category</th>
-
+ 
                   <th scope="col" class="text-end">
                     Amount
                   </th>
-
+ 
                 </tr>
-
+ 
               </thead>
-
+ 
               <tbody>
-
+ 
                 {{#each recentExpenses}}
-
+ 
                   <tr>
-
+ 
                     <td>
                       <strong>{{this.description}}</strong>
                     </td>
-
+ 
                     <td>
                       <span class="expense-category">
                         {{this.category}}
                       </span>
                     </td>
-
+ 
                     <td class="text-end fw-semibold">
                       ${{this.amount}}
                     </td>
-
+ 
                   </tr>
-
+ 
                 {{/each}}
-
+ 
               </tbody>
-
+ 
             </table>
-
+ 
           </div>
-
+ 
         {{else}}
-
+ 
           <div class="dashboard-empty-state">
-
+ 
             <p class="text-muted mb-3">
               No expenses to display yet.
             </p>
-
+ 
             <a href="/expenses#add-expense"
                class="btn btn-outline-dark btn-sm">
-
+ 
               + Add Your First Expense
-
+ 
             </a>
-
+ 
           </div>
-
+ 
         {{/if}}
-
+ 
       </div>
-
+ 
     </div>
-
+ 
   {{/if}}
-
+ 
 </div>

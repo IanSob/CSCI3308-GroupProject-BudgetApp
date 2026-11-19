@@ -1134,42 +1134,83 @@ app.post('/login', no_auth, async (req, res) => {
 });
 
 
+// Convert one income source to a monthly amount.
+// Hourly income = rate x hours per week x weeks per month (0 if no hours were saved).
+const toMonthlyIncome = (income) => {
+  const amount = Number(income.amount);
+ 
+  switch (income.incometype) {
+    case 'Hourly': {
+      const hours = Number(income.hoursperweek);
+      return hours > 0 ? amount * hours * WEEKS_PER_MONTH : 0;
+    }
+    case 'Weekly':
+      return amount * WEEKS_PER_MONTH;
+    case 'Bi-Weekly':
+      return (amount * 26) / 12;
+    case 'Monthly':
+      return amount;
+    default:
+      return 0;
+  }
+};
+ 
+// Convert one recurring expense schedule to a monthly amount.
+const toMonthlyExpense = (schedule) => {
+  const amount = Number(schedule.amount);
+ 
+  switch (schedule.frequency) {
+    case 'weekly':
+      return amount * WEEKS_PER_MONTH;
+    case 'biweekly':
+      return (amount * 26) / 12;
+    case 'monthly':
+      return amount;
+    case 'yearly':
+      return amount / 12;
+    default:
+      return 0;
+  }
+};
+
+const WEEKS_PER_MONTH = 52 / 12;
+
 // Dashboard Route
 app.get('/dashboard', auth, async (req, res) => {
   try {
-
+ 
     // 1. Identify the logged-in user
-
+ 
     const username = getUsername(req);
-
-
+ 
+ 
     // 2. Process recurring expenses
-
+ 
     await processRecurringExpenses(username);
-
-
+ 
+ 
     // 3. Get total savings
-
+ 
     const savingsRow = await db.one(
       `SELECT COALESCE(SUM(amount), 0) AS total
        FROM userSavings
        WHERE username = $1`,
       [username]
     );
-
-
+ 
+ 
     // 4. Get income sources
     
-
+ 
     const incomes = await db.any(
-      `SELECT incomeName, incomeType, amount
+      `SELECT incomeName, incomeType, amount, hoursPerWeek
        FROM userIncome
        WHERE username = $1
        ORDER BY incomeID DESC`,
       [username]
     );
-
-
+ 
+ 
     // 5. Get recorded expenses
     const expenses = await db.any(
       `SELECT expense_id,
@@ -1181,9 +1222,9 @@ app.get('/dashboard', auth, async (req, res) => {
        ORDER BY expense_id DESC`,
       [username]
     );
-
+ 
     // 6. Get upcoming recurring expenses
-
+ 
     const recurringExpenses = await db.any(
       `SELECT recurring_expense_id,
               expense_name,
@@ -1203,19 +1244,30 @@ app.get('/dashboard', auth, async (req, res) => {
        LIMIT 5`,
       [username]
     );
-
-
+ 
+ 
     
+    // Every active recurring schedule counts toward the monthly net,
+    // not just the five upcoming ones shown in the table.
+    const activeSchedules = await db.any(
+      `SELECT amount, frequency
+       FROM recurring_expenses
+       WHERE username = $1
+         AND active = TRUE`,
+      [username]
+    );
+ 
+ 
     // 7. Format financial data
-
+ 
     const formatMoney = (amount) => {
       return Number(amount).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
     };
-
-
+ 
+ 
     // Calculate total recorded expenses
     const totalExpenses = expenses.reduce(
       (total, expense) => total + Number(expense.amount),
@@ -1223,6 +1275,29 @@ app.get('/dashboard', auth, async (req, res) => {
     );
 
 
+
+
+    // Expected monthly net = monthly income - monthly recurring expenses
+    const monthlyIncome = incomes.reduce(
+      (total, income) => total + toMonthlyIncome(income),
+      0
+    );
+ 
+    const monthlyRecurring = activeSchedules.reduce(
+      (total, schedule) => total + toMonthlyExpense(schedule),
+      0
+    );
+ 
+    const netMonthly =
+      Math.round((monthlyIncome - monthlyRecurring) * 100) / 100;
+ 
+    // Hourly incomes without saved hours cannot be estimated
+    const incomesMissingHours = incomes.filter(
+      (income) =>
+        income.incometype === 'Hourly' && !(Number(income.hoursperweek) > 0)
+    ).length;
+ 
+ 
     // Format income sources
     const formattedIncomes = incomes.map(income => ({
       name: income.incomename,
@@ -1231,14 +1306,15 @@ app.get('/dashboard', auth, async (req, res) => {
     }));
 
 
+
     // Format five most recently recorded expenses
     const recentExpenses = expenses.slice(0, 5).map(expense => ({
       description: expense.expense_name,
       category: expense.category,
       amount: formatMoney(expense.amount)
     }));
-
-
+ 
+ 
     // Format recurring expenses
     const formattedRecurringExpenses = recurringExpenses.map(expense => ({
       name: expense.expense_name,
@@ -1247,58 +1323,69 @@ app.get('/dashboard', auth, async (req, res) => {
       frequency: expense.frequency,
       nextDueDate: expense.next_due_date
     }));
-
-
+ 
+ 
     // =====================================
     // 8. Render Dashboard
     // =====================================
-
+ 
     res.render('pages/dashboard', {
-
+ 
       username: username,
-
+ 
       // Financial summary
       savingsAmount: formatMoney(savingsRow.total),
       totalExpenses: formatMoney(totalExpenses),
-      incomeCount: formattedIncomes.length,
-
+ 
+      // Expected monthly net (netMonthly is shown without a sign)
+      netMonthly: formatMoney(Math.abs(netMonthly)),
+      netIsPositive: netMonthly >= 0,
+      monthlyIncome: formatMoney(monthlyIncome),
+      monthlyRecurring: formatMoney(monthlyRecurring),
+      incomesMissingHours: incomesMissingHours,
+ 
       // Income sources
       incomes: formattedIncomes,
-
+ 
       // Recent expenses
       recentExpenses: recentExpenses,
       hasExpenses: recentExpenses.length > 0,
-
+ 
       // Recurring expenses
       upcomingRecurringExpenses: formattedRecurringExpenses,
       hasUpcomingExpenses: formattedRecurringExpenses.length > 0
-
+ 
     });
-
+ 
   } catch (error) {
-
+ 
     console.error('Dashboard error:', error.message);
-
+ 
     res.status(500).render('pages/dashboard', {
-
+ 
       errorMessage: 'Unable to load your financial data.',
-
+ 
       username: '',
-
+ 
       savingsAmount: '0.00',
       totalExpenses: '0.00',
-      incomeCount: 0,
-
+ 
+      netMonthly: '0.00',
+      netIsPositive: true,
+      monthlyIncome: '0.00',
+      monthlyRecurring: '0.00',
+      incomesMissingHours: 0,
+ 
       incomes: [],
-
+ 
       recentExpenses: [],
       hasExpenses: false,
-
+ 
       upcomingRecurringExpenses: [],
       hasUpcomingExpenses: false
-
+ 
     });
-
+ 
   }
 });
 
