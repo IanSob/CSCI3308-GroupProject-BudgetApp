@@ -297,6 +297,14 @@ app.get('/expenses', auth, async (req, res) => {
       [username]
     );
 
+    const savingsAccounts = await db.any(
+      `SELECT savingsID, accountName, amount
+      FROM userSavings
+      WHERE username = $1
+      ORDER BY savingsID`,
+      [username]
+    );
+
     const recurringExpenses = await db.any(
       `SELECT recurring_expense_id,
               expense_name,
@@ -321,6 +329,7 @@ app.get('/expenses', auth, async (req, res) => {
     hasExpenses: expenses.length > 0,
     recurringExpenses: recurringExpenses,
     hasRecurringExpenses: recurringExpenses.length > 0,
+    savingsAccounts: savingsAccounts,
     totalExpenses: totalExpenses.toFixed(2),
     successMessage: req.query.success
       ? 'Expense added successfully!'
@@ -355,7 +364,7 @@ app.post('/expenses', auth, async (req, res) => {
   try {
     const username = getUsername(req);
 
-    const { expense_name, amount, category } = req.body;
+    const { expense_name, amount, category, savingsid } = req.body;
 
     // Validate required fields
     if (
@@ -369,11 +378,41 @@ app.post('/expenses', auth, async (req, res) => {
       return res.status(400).redirect('/expenses');
     }
 
+    // Verify the savings account belongs to the logged-in user.
+    let selectedSavingsId = null;
+
+    if (savingsid) {
+      const parsedSavingsId = Number(savingsid);
+
+      if (!Number.isInteger(parsedSavingsId) || parsedSavingsId <= 0) {
+        return res.status(400).redirect('/expenses');
+      }
+
+      const savingsAccount = await db.oneOrNone(
+        `SELECT savingsid
+         FROM usersavings
+         WHERE savingsid = $1 AND username = $2`,
+        [parsedSavingsId, username]
+      );
+
+      if (!savingsAccount) {
+        return res.status(400).redirect('/expenses');
+      }
+
+      selectedSavingsId = parsedSavingsId;
+    }
+
     // Save expense to database
     await db.none(
-      `INSERT INTO expenses (username, expense_name, amount, category)
-       VALUES ($1, $2, $3, $4)`,
-      [username, expense_name.trim(), Number(amount), category]
+      `INSERT INTO expenses (username, expense_name, amount, category, savingsid)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        username,
+        expense_name.trim(),
+        Number(amount),
+        category,
+        selectedSavingsId
+      ]
     );
 
     res.redirect('/expenses?success=1');
@@ -566,6 +605,34 @@ app.post('/recurring-expenses/:id/stop', auth, async (req, res) => {
     res.redirect('/expenses?recurringStopped=1');
   } catch (err) {
     console.log('Stop recurring expense error:', err.message || err);
+    res.status(500).redirect('/expenses');
+  }
+});
+
+// Delete a regular expense
+app.post('/expenses/:id/delete', auth, async (req, res) => {
+  try {
+    const username = getUsername(req);
+    const expenseId = Number(req.params.id);
+
+    if (!Number.isInteger(expenseId) || expenseId <= 0) {
+      return res.status(400).redirect('/expenses');
+    }
+
+    const result = await db.result(
+      `DELETE FROM expenses
+       WHERE expense_id = $1
+         AND username = $2`,
+      [expenseId, username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).redirect('/expenses');
+    }
+
+    res.redirect('/expenses?expenseDeleted=1');
+  } catch (err) {
+    console.log('Delete expense error:', err.message || err);
     res.status(500).redirect('/expenses');
   }
 });

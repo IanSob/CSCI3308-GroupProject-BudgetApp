@@ -73,6 +73,20 @@
                     </select>
                 </div>
 
+                <div class="mb-3">
+                    <label for="savingsid" class="form-label">Savings Account</label>
+                    <select
+                        class="form-select"
+                        id="savingsid"
+                        name="savingsid"
+                    >
+                        <option value="" selected>No savings account selected</option>
+                        {{#each savingsAccounts}}
+                            <option value="{{savingsid}}">{{accountname}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+
                 <button type="submit" class="btn btn-dark">
                     Add Expense
                 </button>
@@ -373,6 +387,12 @@
                             <p class="card-text">
                                 Category: {{category}}
                             </p>
+
+                            <form action="/expenses/{{expense_id}}/delete" method="POST">
+                                <button type="submit" class="btn btn-dark btn-sm">
+                                    Delete
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -380,7 +400,7 @@
         {{else}}
             {{#unless errorMessage}}
                 <div class="col-12 text-center">
-                    <p>You don't have any expenses recorded yet.</p>
+                    <p class="text-muted">You don't have any expenses yet.</p>
                 </div>
             {{/unless}}
         {{/if}}
