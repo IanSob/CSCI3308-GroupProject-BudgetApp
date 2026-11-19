@@ -66,6 +66,7 @@ Creative functions for interpreting data
 
 ### 11/18 TA Meeting Notes:
 - Dashboard/home page done
+- Income and Expensis updated
 - Work on profile page tonight
 - Exam tonight
 - Think about presentation
