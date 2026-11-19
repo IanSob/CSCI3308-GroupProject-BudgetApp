@@ -1,0 +1,66 @@
+<div class="row justify-content-center mt-4">
+    <h1>Profile</h1>
+    {{> message}}
+    <h3>Name: {{> include_name}}</h3>
+    <h3>Username: {{> include_username}}</h3>
+    <h3>Email: {{> include_email}}</h3>
+    <div class="row">
+        <div class="col-sm">
+            <button class="btn btn-outline-dark mt-3" data-bs-toggle="modal" data-bs-target="#event_modal" onclick="setModalForm(['emailWrapper'], '/updateemail', 'Change Email')">Change Email</button>
+        </div>
+        <div class="col-sm">
+            <button class="btn btn-outline-dark mt-3" data-bs-toggle="modal" data-bs-target="#event_modal" onclick="setModalForm(['passwordWrapper', 'passwordConfirmWrapper'], '/updatepassword', 'Change Password')">Change Password</button>
+        </div>
+        <div class="col-sm">
+            <button class="btn btn-outline-dark mt-3" data-bs-toggle="modal" data-bs-target="#event_modal" onclick="setModalForm(['usernameWrapper'], '/updateusername', 'Change Username')">Change Username</button>
+        </div>
+        <div class="col-sm">
+            <button class="btn btn-outline-dark mt-3" data-bs-toggle="modal" data-bs-target="#event_modal" onclick="setModalForm(['nameWrapper'], '/updatename', 'Change Name')">Change Name</button>
+        </div>
+    </div>
+</div>
+
+
+{{!-- Modal --}}
+<div class="modal" id="event_modal">
+    <!-- For centering the content at the top middle -->
+    <div class="modal-dialog">
+        <!-- For the encompassing of the content in a box -->
+        <div class="modal-content">
+            <!-- Top content of modal -->
+            <div class="modal-heading text-center">
+                <h1 style="border-bottom-style: groove; padding-bottom: 10px;" id="modalTitle">Edit Profile</h1>
+            </div>
+            
+            <form action="/settings" method="post" id="settingsForm">
+                <div class="modal-body">
+                    <div title="Name must be 50 characters or fewer and not contain special characters or numbers." class="form-group mb-3" id="nameWrapper">
+                        <label for="name" class="form-label">New Name</label>
+                        <input class="form-control" name="name" id="name" placeholder="Enter your name" oninput="validName()" required/>
+                    </div>
+                    <div class="form-group mb-3" id="emailWrapper">
+                        <label for="email" class="form-label">New Email</label>
+                        <input type="email" class="form-control" name="email" id="email" aria-describedby="emailHelp" placeholder="Enter a valid email" required/>
+                    </div>
+                    <div title = "Username must be between 3-50 characters long and only contain upper or lowercase letters, periods, uderscores, or numbers." class="form-group mb-3" id="usernameWrapper">
+                        <label for="username" class="form-label">New Username</label>
+                        <input class="form-control" name="username" id="username" placeholder="Enter a username" oninput="validUsername()" required/>
+                    </div>
+                    <div title="Password must have 8 characters with an uppercase letter, lowercase letter, and a special character or number." class="form-group mb-3" id="passwordWrapper">
+                        <label for="password" class="form-label">New Password</label>
+                        <input class="form-control" type="password" name="password" id="password" placeholder="Enter a password" oninput="validPassword()" required/>
+                    </div>
+                    <div class="form-group mb-3" id="passwordConfirmWrapper">
+                        <label for="passwordConfirm" class="form-label">Confirm New Password</label>
+                        <input class="form-control" type="password" name="passwordConfirm" id="passwordConfirm" placeholder="Enter the same password" oninput="passwordMatch()" required/>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="currentPassword" class="form-label">Current Password</label>
+                        <input class="form-control" type="password" name="currentPassword" id="currentPassword" placeholder="Enter your current password" required/>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

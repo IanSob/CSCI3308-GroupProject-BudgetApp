@@ -78,3 +78,6 @@ function validateRegistration (pass, passConfirm, usr, usrName, email)
 }
 
 module.exports.validateRegistration = validateRegistration;
+module.exports.validatePassword = validatePassword;
+module.exports.validateName = validateName;
+module.exports.validateUsername = validateUsername;

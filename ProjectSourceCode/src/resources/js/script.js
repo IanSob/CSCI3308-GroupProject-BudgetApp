@@ -106,3 +106,38 @@ function validName()
         usrName.setCustomValidity("Name must not contain special characters of numbers.");
     }
 }
+
+// Set the form action and title for the modal
+// Also hide and not require / show and require depending on 'showItems' which are IDs
+function setModalForm(showItems, formAction, modalTitle)
+{
+    hideables = [
+        {wrapper: document.getElementById("emailWrapper"), input: document.getElementById("email")},
+        {wrapper: document.getElementById("nameWrapper"), input: document.getElementById("name")},
+        {wrapper: document.getElementById("usernameWrapper"), input: document.getElementById("username")},
+        {wrapper: document.getElementById("passwordWrapper"), input: document.getElementById("password")},
+        {wrapper: document.getElementById("passwordConfirmWrapper"), input: document.getElementById("passwordConfirm")}
+    ];
+
+    // Set the title of the modal
+    document.getElementById("modalTitle").innerText = modalTitle;
+    // Set the action of the form
+    document.getElementById("settingsForm").setAttribute("action", formAction);
+
+    for(i in hideables)
+    {
+        item = hideables[i]
+        // Show and require showItems
+        if(showItems.includes(item.wrapper.id))
+        {
+            item.wrapper.removeAttribute('hidden');
+            item.input.setAttribute('required', true);
+        }
+        // Hide and not require non showItems
+        else
+        {
+            item.wrapper.setAttribute('hidden', '');
+            item.input.removeAttribute('required');
+        }
+    }
+}

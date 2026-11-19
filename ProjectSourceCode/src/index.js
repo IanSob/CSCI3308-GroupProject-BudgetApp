@@ -1221,6 +1221,131 @@ app.post('/logout', auth, (req, res) => {
   });
 });
 
+const updateErrorMessages = 
+[
+  "Incorrect password, nothing was updated.",
+  "Email is taken.",
+  "Invalid name.",
+  "Invalid password.",
+  "Invalid username."
+];
+app.get('/settings', auth, async (req, res) => {
+  username = req.session.user.username
+
+  try
+  {
+    usr = await db.one("SELECT * FROM users WHERE username = $1", [username]);
+
+    if(errorCode = req.query.errorCode)
+    {
+      res.status(400).render('pages/profile.hbs', {
+      username: username,
+      user_name: usr.name,
+      email: usr.email,
+      error: true,
+      message: updateErrorMessages[parseInt(errorCode)]
+      });
+    }
+    else
+    {
+      res.render('pages/profile.hbs', {
+      username: username,
+      user_name: usr.name,
+      email: usr.email
+      });
+    }
+  }
+  catch (err)
+  {
+    res.status(500).send("There was an error getting your settings.")
+  }
+});
+
+// Helper function for updating.
+// Checks that the request has a valid session user and the password matches the user
+const rightUserWithPass = async (req, res, next) => {
+  try
+  {
+    usr = await db.one("SELECT * FROM users WHERE username = $1", [req.session.user.username]);
+    if(!(await bcrypt.compare(req.body.currentPassword, usr.password)))
+    {
+      console.log("Bcrypt false");
+      return res.redirect('/settings?errorCode=0');
+    }
+    console.log("Bcrypt success.")
+    next();
+  }
+  catch (err)
+  {
+    res.status(500).send(err);
+  }
+}
+
+app.post('/updateemail', auth, rightUserWithPass, async (req, res) => {
+  username = req.session.user.username;
+  email = req.body.email;
+
+  try 
+  {
+    if((await db.any("SELECT email FROM users WHERE email = $1", [email])).length > 0)
+    {
+      res.redirect('/settings?errorCode=1');
+    }
+    else
+    {
+      await db.none("UPDATE users SET email = $1 WHERE username = $2", [email, username]);
+      res.redirect(303, "/settings");
+    }
+  }
+  catch (err) 
+  {
+    res.status(500).send("There was an error updating your email.");
+  }
+});
+
+app.post('/updatename', auth, rightUserWithPass, async (req, res) => {
+  username = req.session.user.username;
+  newName = req.body.name;
+
+  if(validation.validateName(newName))
+  {
+    res.redirect('/settings?errorCode=2');
+  }
+  else
+  {
+    try 
+    {
+      await db.none("UPDATE users SET name = $1 WHERE username = $2", [newName, username]);
+      res.redirect(303, "/settings");
+    }catch(err) 
+    {
+      res.status(500).send("There was an error updating your email.");
+    }
+  }
+});
+
+app.post('/updatepassword', auth, rightUserWithPass, async (req, res) => {
+  username = req.session.user.username;
+  newPassword = req.body.password;
+
+  if(validation.validatePassword(newPassword) || !(newPassword == req.body.passwordConfirm))
+  {
+    res.redirect('/settings?errorCode=3');
+  }
+  else
+  {
+    try 
+    {
+      const hash = await bcrypt.hash(newPassword, 10);
+      await db.none("UPDATE users SET password = $1 WHERE username = $2", [hash, username]);
+      res.redirect(303, "/settings");
+    }catch(err) 
+    {
+      res.status(500).send("There was an error updating your email.");
+    }
+  }
+});
+
 // *****************************************************
 // Section 5 : Start Server
 // *****************************************************
