@@ -87,3 +87,42 @@
 @media(max-width:1199.98px){.app-navbar .navbar-collapse{padding-top:12px}.app-navbar .app-nav-button{width:100%;text-align:center;margin-top:6px}}
 @media(max-width:767.98px){.cu-home-v2 .cu-home-hero{padding:1.6rem}.cu-home-v2 .cu-home-title{font-size:2.3rem}}
 /* === End CU navbar + Home refinements v2 === */
+
+/* Expenses page styling */
+.cu-dashboard-page .cu-dashboard-title {
+    color: #202326;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.cu-dashboard-page .cu-dashboard-card {
+    background: #fff;
+    border: 1px solid #e7e3d9;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.045);
+}
+
+.cu-dashboard-page .cu-dashboard-card .card-title {
+    color: #202326;
+    font-weight: 700;
+}
+
+.cu-dashboard-page .cu-dashboard-card h3,
+.cu-dashboard-page .cu-dashboard-card h4 {
+    color: #98752e;
+    font-weight: 750;
+}
+
+/* Expenses page button styling */
+.cu-dashboard-page .cu-primary-action {
+    background-color: #202326;
+    border: 1px solid #202326;
+    color: #fff;
+    transition: background-color 0.2s ease;
+}
+
+.cu-dashboard-page .cu-primary-action:hover {
+    background-color: #cfb87c;
+    border-color: #cfb87c;
+    color: #202326;
+}

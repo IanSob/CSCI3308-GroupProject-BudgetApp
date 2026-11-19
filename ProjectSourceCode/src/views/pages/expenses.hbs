@@ -1,8 +1,8 @@
- <div class="container mt-5">
-    <h1 class="mb-4">My Expenses</h1>
+ <div class="container mt-5 cu-dashboard-page">
+    <h1 class="cu-dashboard-title mb-4">My Expenses</h1>
 
     <!-- Total Expenses -->
-    <div class="card mb-4">
+    <div class="card mb-4 cu-dashboard-card">
         <div class="card-body">
             <h5 class="card-title">Total Expenses</h5>
             <h3 id="total-expenses">${{totalExpenses}}</h3>
@@ -24,7 +24,7 @@
     {{/if}}
 
     <!-- Add Expense Form -->
-    <div class="card mb-4">
+    <div class="card mb-4 cu-dashboard-card">
         <div class="card-body">
             <h5 class="card-title">Add an Expense</h5>
 
@@ -73,7 +73,7 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn cu-primary-action">
                     Add Expense
                 </button>
             </form>
@@ -88,7 +88,7 @@
     {{/if}}
 
     <!-- Add Recurring Expense Form -->
-    <div class="card mb-4">
+    <div class="card mb-4 cu-dashboard-card">
         <div class="card-body">
             <h5 class="card-title">Add a Recurring Expense</h5>
             <p class="text-muted">
@@ -191,13 +191,13 @@
 
     <!-- Recurring Expense Schedules -->
     <div class="mb-4">
-        <h3 class="mb-3">My Recurring Expenses</h3>
+        <h3 class="cu-dashboard-title mb-3">My Recurring Expenses</h3>
 
         {{#if hasRecurringExpenses}}
             <div class="row">
                 {{#each recurringExpenses}}
                     <div class="col-md-6 mb-4">
-                        <div class="card h-100">
+                        <div class="card h-100 cu-dashboard-card">
                             <div class="card-body">
                                 <h5 class="card-title">
                                     {{expense_name}}
@@ -366,7 +366,7 @@
         {{#if hasExpenses}}
             {{#each expenses}}
                 <div class="col-md-4 mb-4">
-                    <div class="card h-100">
+                    <div class="card h-100 cu-dashboard-card">
                         <div class="card-body">
                             <h5 class="card-title">{{expense_name}}</h5>
                             <h4 class="card-text">${{amount}}</h4>
